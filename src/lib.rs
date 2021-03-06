@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 use yaml_rust::parser::{Event, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::Marker;
+use yaml_rust::YamlLoader;
 
+use std::collections::HashMap;
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -13,11 +15,11 @@ struct Config {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 struct Colors {
-    cursor: Option<Cursor>,
-    primary: Option<Primary>,
-    normal: Option<List>,
-    bright: Option<List>,
-    dim: Option<List>,
+    cursor: HashMap<String, String>,
+    primary: HashMap<String, String>,
+    normal: HashMap<String, String>,
+    bright: HashMap<String, String>,
+    dim: HashMap<String, String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
@@ -44,17 +46,23 @@ struct List {
     white: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+struct Bounds {
+    line: usize,
+    column: usize,
+}
+
 struct ColorEventReceiver<T> {
     listener: T,
 }
 
-impl<T: Fn(Event, Marker)> ColorEventReceiver<T> {
+impl<T: FnMut(Event, Marker)> ColorEventReceiver<T> {
     fn new(listener: T) -> Self {
         Self { listener }
     }
 }
 
-impl<T: Fn(Event, Marker)> MarkedEventReceiver for ColorEventReceiver<T> {
+impl<T: FnMut(Event, Marker)> MarkedEventReceiver for ColorEventReceiver<T> {
     fn on_event(&mut self, event: Event, marker: Marker) {
         (self.listener)(event, marker);
     }
@@ -65,21 +73,46 @@ pub fn apply(
     scheme_dir: impl AsRef<Path>,
     scheme_file: &str,
 ) -> anyhow::Result<()> {
-    let colors = parse_colors(scheme_dir.as_ref().join(scheme_file))?;
+    let new_colors = parse_colors(scheme_dir.as_ref().join(scheme_file))?;
 
     let config_str = fs::read_to_string(config_file.as_ref())?;
-    let new_config_str = config_str.clone();
+    let mut current_path: Vec<String> = Vec::new();
+    let mut last_line = 0;
+    let mut last_col = 0;
 
     let mut parser = Parser::new(config_str.chars());
-    let recv = |event, marker| match event {
-        Event::MappingStart(anchor_id) => {}
-        Event::MappingEnd => {}
-        _ => (),
-    };
-    let mut receiver = ColorEventReceiver::new(recv);
-    parser.load(&mut receiver, false)?;
-
-    fs::write(config_file.as_ref(), new_config_str)?;
+    let mut receiver = ColorEventReceiver::new(move |event, mark| {
+        match event {
+            Event::Scalar(name, ts, _, tt) => {
+                if mark.line() != last_line {
+                    println!("key{:?}{:?}#{}", ts, tt, name);
+                    if mark.col() == last_col {
+                        current_path.pop();
+                        current_path.push(name);
+                        last_line = mark.line();
+                        last_col = mark.col();
+                    } else if mark.col() == last_col + 2 {
+                        current_path.push(name);
+                        last_line = mark.line();
+                        last_col = mark.col();
+                    } else if mark.col() < last_col {
+                        let indent = mark.col() / 2;
+                        for _ in indent..current_path.len() {
+                            current_path.pop();
+                        }
+                        current_path.push(name);
+                        last_line = mark.line();
+                        last_col = mark.col();
+                    }
+                } else {
+                    println!("val{:?}{:?}#{}", ts, tt, name);
+                }
+            }
+            _ => (),
+        }
+        println!("{:?}{:?}", mark, current_path);
+    });
+    parser.load(&mut receiver, true)?;
 
     Ok(())
 }
@@ -100,9 +133,11 @@ pub fn status(config_file: impl AsRef<Path>, scheme_dir: impl AsRef<Path>) {
     let options = list(scheme_dir);
 }
 
-fn parse_colors(file: impl AsRef<Path>) -> anyhow::Result<Colors> {
-    let config_str = std::fs::read_to_string(file)?;
-    let config: Config = serde_yaml::from_str(&config_str)?;
+fn parse_colors(file: impl AsRef<Path>) -> anyhow::Result<()> {
+    let config_str = fs::read_to_string(file)?;
+    let config = YamlLoader::load_from_str(&config_str)?;
 
-    Ok(config.colors)
+    println!("{:?}", config);
+
+    Ok(())
 }
