@@ -41,7 +41,7 @@ pub fn apply(
 
     let mut parser = Parser::new(config_str.chars());
     let mut receiver = ColorEventReceiver::new(|event, mark| match event {
-        Event::Scalar(name, ts, _, tt) => {
+        Event::Scalar(name, _, _, _) => {
             if mark.line() != last_line {
                 if mark.col() == last_col {
                     current_path.pop();
@@ -85,12 +85,45 @@ pub fn apply(
         new_config_str.push('\n');
     }
 
-    println!("{}", new_config_str);
+    fs::write(config_file, new_config_str)?;
+
+    let current_dir = scheme_dir.as_ref().join("current");
+    let current_file = current_dir.join(scheme_file);
+    fs::remove_dir_all(&current_dir)?;
+    fs::create_dir_all(&current_dir)?;
+    fs::File::create(current_file)?;
 
     Ok(())
 }
 
-pub fn toggle(config_file: impl AsRef<Path>, scheme_dir: impl AsRef<Path>, reverse: bool) {}
+pub fn toggle(
+    config_file: impl AsRef<Path>,
+    scheme_dir: impl AsRef<Path>,
+    reverse: bool,
+) -> anyhow::Result<String> {
+    let mut available_schemes: Vec<_> = list(scheme_dir.as_ref())?;
+    if available_schemes.is_empty() {
+        bail!("No colorschemes available");
+    }
+    available_schemes.sort();
+
+    let mut index = 0;
+    if let Ok(c) = status(scheme_dir.as_ref()) {
+        if let Some(i) = available_schemes.iter().position(|f| f == &c) {
+            index = if reverse {
+                (available_schemes.len() + i - 1) % available_schemes.len()
+            } else {
+                (i + 1) % available_schemes.len()
+            };
+        }
+    }
+
+    let new_scheme = available_schemes.remove(index);
+
+    apply(config_file, scheme_dir, &new_scheme)?;
+
+    Ok(new_scheme)
+}
 
 pub fn list(dir: impl AsRef<Path>) -> Result<Vec<String>, io::Error> {
     fs::read_dir(dir.as_ref()).map(|read_dir| {
@@ -102,8 +135,16 @@ pub fn list(dir: impl AsRef<Path>) -> Result<Vec<String>, io::Error> {
     })
 }
 
-pub fn status(config_file: impl AsRef<Path>, scheme_dir: impl AsRef<Path>) {
-    let options = list(scheme_dir);
+pub fn status(scheme_dir: impl AsRef<Path>) -> anyhow::Result<String> {
+    let current_dir = scheme_dir.as_ref().join("current");
+
+    match std::fs::read_dir(current_dir)?.into_iter().next() {
+        Some(Ok(d)) => match d.file_name().to_str().map(str::to_owned) {
+            Some(c) => return Ok(c),
+            None => bail!("Error reading current colorscheme file"),
+        },
+        _ => bail!("No current colorscheme file found"),
+    }
 }
 
 fn parse_colors(file: impl AsRef<Path>) -> anyhow::Result<Yaml> {
@@ -122,7 +163,7 @@ fn value<'a>(yaml: &'a Yaml, path: &[String]) -> Option<&'a Yaml> {
 
     for key in path {
         if let Yaml::Hash(h) = current {
-            let value = h.iter().find(|(k, v)| match k {
+            let value = h.iter().find(|(k, _)| match k {
                 Yaml::String(s) => s == key,
                 _ => false,
             });

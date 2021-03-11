@@ -1,7 +1,7 @@
 use clap::{crate_version, App, Arg, ValueHint};
 use std::path::Path;
 
-use alacritty_colorscheme::{apply, list, status, toggle};
+use alacritty_colorscheme as lib;
 
 fn main() {
     let base_dirs = directories_next::BaseDirs::new().unwrap();
@@ -10,7 +10,7 @@ fn main() {
     let default_config_file = alacritty_dir.join("alacritty.yml");
     let default_colorscheme_dir = alacritty_dir.join("colors");
 
-    let app = App::new("alacritty colorscheme")
+    let mut app = App::new("alacritty colorscheme")
         .version(crate_version!())
         .bin_name("alco")
         .arg(
@@ -46,7 +46,7 @@ fn main() {
             App::new("status"),
         ]);
 
-    let app_m = app.get_matches();
+    let app_m = app.get_matches_mut();
 
     let config_file = app_m.value_of("configuration file").unwrap();
     let scheme_dir = app_m.value_of("colorscheme directory").unwrap();
@@ -54,29 +54,34 @@ fn main() {
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {
             let scheme_file = sub_m.value_of("colorscheme").unwrap();
-            _apply(config_file, scheme_dir, scheme_file);
+            apply(config_file, scheme_dir, scheme_file);
         }
         Some(("toggle", sub_m)) => {
             let reverse = sub_m.is_present("reverse");
-            _toggle(config_file, scheme_dir, reverse);
+            toggle(config_file, scheme_dir, reverse);
         }
-        Some(("list", _sub_m)) => _list(scheme_dir),
-        Some(("status", _sub_m)) => _status(config_file, scheme_dir),
-        _ => unreachable!(),
+        Some(("list", _)) => list(scheme_dir),
+        Some(("status", _)) => status(scheme_dir),
+        _ => {
+            app.print_help().ok();
+        }
     }
 }
 
-fn _apply(config_file: impl AsRef<Path>, scheme_dir: impl AsRef<Path>, scheme_file: &str) {
-    if let Err(e) = apply(config_file, scheme_dir, scheme_file) {
+fn apply(config_file: impl AsRef<Path>, scheme_dir: impl AsRef<Path>, scheme_file: &str) {
+    if let Err(e) = lib::apply(config_file, scheme_dir, scheme_file) {
         println!("Error applying colorscheme {}:\n{:?}", scheme_file, e);
     }
 }
-fn _toggle(config_file: impl AsRef<Path>, scheme_dir: impl AsRef<Path>, reverse: bool) {
-    let _ = toggle(config_file, scheme_dir, reverse);
+fn toggle(config_file: impl AsRef<Path>, scheme_dir: impl AsRef<Path>, reverse: bool) {
+    match lib::toggle(config_file, scheme_dir, reverse) {
+        Ok(c) => println!("{}", c),
+        Err(_) => println!("Error toggling colorscheme"),
+    }
 }
 
-fn _list(dir: impl AsRef<Path>) {
-    match list(dir.as_ref()) {
+fn list(dir: impl AsRef<Path>) {
+    match lib::list(dir.as_ref()) {
         Ok(files) => {
             for f in files {
                 println!("{}", f);
@@ -89,6 +94,9 @@ fn _list(dir: impl AsRef<Path>) {
     }
 }
 
-fn _status(config_file: impl AsRef<Path>, scheme_dir: impl AsRef<Path>) {
-    let _ = status(config_file, scheme_dir);
+fn status(scheme_dir: impl AsRef<Path>) {
+    match lib::status(scheme_dir) {
+        Ok(s) => println!("{}", s),
+        Err(_) => println!("Error getting current colorscheme"),
+    }
 }
