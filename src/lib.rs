@@ -1,13 +1,14 @@
 use anyhow::bail;
+use async_std::task::block_on;
+use nvim_rs::rpc::handler::Dummy;
 use serde::{Deserialize, Serialize};
 use yaml_rust::parser::{Event, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::Marker;
 use yaml_rust::{Yaml, YamlLoader};
 
-use std::fs;
-use std::io;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
+use std::{fs, io};
 
 struct ColorEventReceiver<T> {
     listener: T,
@@ -38,6 +39,20 @@ impl Current {
     fn now() -> Self {
         let changed = humantime::format_rfc3339(SystemTime::now()).to_string();
         Self::new(changed)
+    }
+}
+
+pub struct Status {
+    pub file_name: String,
+    pub duration: Duration,
+}
+
+impl Status {
+    pub fn new(file_name: String, duration: Duration) -> Self {
+        Status {
+            file_name,
+            duration,
+        }
     }
 }
 
@@ -154,20 +169,6 @@ pub fn list(dir: impl AsRef<Path>) -> Result<Vec<String>, io::Error> {
     })
 }
 
-pub struct Status {
-    pub file_name: String,
-    pub duration: Duration,
-}
-
-impl Status {
-    pub fn new(file_name: String, duration: Duration) -> Self {
-        Status {
-            file_name,
-            duration,
-        }
-    }
-}
-
 pub fn status(scheme_dir: impl AsRef<Path>) -> anyhow::Result<Status> {
     let mut current_file = scheme_dir.as_ref().join("current");
 
@@ -184,6 +185,33 @@ pub fn status(scheme_dir: impl AsRef<Path>) -> anyhow::Result<Status> {
         },
         _ => bail!("No current colorscheme file found"),
     }
+}
+
+pub fn neovim() -> anyhow::Result<()> {
+    let instances: Vec<_> = fs::read_dir("/tmp")?
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|d| d.metadata().map(|m| m.is_dir()).unwrap_or(false))
+        .filter(|d| {
+            d.file_name()
+                .to_str()
+                .map(|s| s.starts_with("nvim"))
+                .unwrap_or(false)
+        })
+        .map(|d| d.path().join("0"))
+        .collect();
+
+    block_on(async {
+        for p in instances.iter() {
+            println!("instance: {}", p.display());
+            let (nvim, _j) = nvim_rs::create::async_std::new_unix_socket(p, Dummy::new()).await?;
+            nvim.command("source ~/.config/nvim/init.vim").await?;
+        }
+
+        Ok::<(), anyhow::Error>(())
+    })?;
+
+    Ok(())
 }
 
 fn parse_current(file: impl AsRef<Path>) -> anyhow::Result<Duration> {

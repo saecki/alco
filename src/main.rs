@@ -30,6 +30,12 @@ fn main() {
                 .value_name("directory")
                 .value_hint(ValueHint::DirPath),
         )
+        .arg(
+            Arg::new("reload_neovim")
+                .long("reload_neovim")
+                .short('v')
+                .takes_value(false),
+        )
         .subcommands(vec![
             App::new("apply").arg(
                 Arg::new("colorscheme")
@@ -57,15 +63,22 @@ fn main() {
 
     let config_file = app_m.value_of("configuration file").unwrap();
     let scheme_dir = app_m.value_of("colorscheme directory").unwrap();
+    let reload_neovim = app_m.is_present("reload_neovim");
 
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {
             let scheme_file = sub_m.value_of("colorscheme").unwrap();
             apply(config_file, scheme_dir, scheme_file);
+            if reload_neovim {
+                neovim();
+            }
         }
         Some(("toggle", sub_m)) => {
             let reverse = sub_m.is_present("reverse");
             toggle(config_file, scheme_dir, reverse);
+            if reload_neovim {
+                neovim();
+            }
         }
         Some(("list", _)) => list(scheme_dir),
         Some(("status", sub_m)) => {
@@ -119,5 +132,11 @@ fn status(scheme_dir: impl AsRef<Path>, time: bool) {
             }
         }
         Err(e) => println!("Error getting current colorscheme:\n{}", e),
+    }
+}
+
+fn neovim() {
+    if let Err(e) = lib::neovim() {
+        println!("Error reload neovim instances:\n{}", e);
     }
 }

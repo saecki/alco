@@ -6,9 +6,11 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-directories-next = "2.0"
+async-std = "1.9"
 clap = "3.0.0-beta.2"
-serde_yaml = "0.8"
-serde = { version = "1.0", features = ["derive"] }
-yaml-rust = "0.4.5"
+directories-next = "2.0"
 humantime = "2.1"
+nvim-rs = { version = "0.2.0", features = ["use_async-std"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"
+yaml-rust = "0.4.5"
