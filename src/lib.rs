@@ -123,7 +123,7 @@ pub fn apply(
 
     let current_dir = scheme_dir.as_ref().join("current");
     let current_file = current_dir.join(scheme_file);
-    fs::remove_dir_all(&current_dir)?;
+    let _ = fs::remove_dir_all(&current_dir);
     fs::create_dir_all(&current_dir)?;
     let current_str = serde_yaml::to_string(&Current::now())?;
     fs::write(current_file, current_str)?;
