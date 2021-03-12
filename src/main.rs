@@ -1,5 +1,6 @@
 use clap::{crate_version, App, Arg, ValueHint};
 use std::path::Path;
+use std::time::Duration;
 
 use alacritty_colorscheme as lib;
 
@@ -43,7 +44,13 @@ fn main() {
                     .takes_value(false),
             ),
             App::new("list"),
-            App::new("status"),
+            App::new("status").arg(
+                Arg::new("time")
+                    .long("time")
+                    .short('t')
+                    .about("print the duration since the last change")
+                    .takes_value(false),
+            ),
         ]);
 
     let app_m = app.get_matches_mut();
@@ -61,7 +68,10 @@ fn main() {
             toggle(config_file, scheme_dir, reverse);
         }
         Some(("list", _)) => list(scheme_dir),
-        Some(("status", _)) => status(scheme_dir),
+        Some(("status", sub_m)) => {
+            let time = sub_m.is_present("time");
+            status(scheme_dir, time);
+        }
         _ => {
             app.print_help().ok();
         }
@@ -94,9 +104,20 @@ fn list(dir: impl AsRef<Path>) {
     }
 }
 
-fn status(scheme_dir: impl AsRef<Path>) {
+fn status(scheme_dir: impl AsRef<Path>, time: bool) {
     match lib::status(scheme_dir) {
-        Ok(s) => println!("{}", s),
-        Err(_) => println!("Error getting current colorscheme"),
+        Ok(s) => {
+            if time {
+                let seconds = Duration::from_secs(s.duration.as_secs());
+                println!(
+                    "{} changed {} ago",
+                    s.file_name,
+                    humantime::format_duration(seconds),
+                );
+            } else {
+                println!("{}", s.file_name);
+            }
+        }
+        Err(e) => println!("Error getting current colorscheme:\n{}", e),
     }
 }

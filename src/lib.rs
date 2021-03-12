@@ -1,4 +1,5 @@
 use anyhow::bail;
+use serde::{Deserialize, Serialize};
 use yaml_rust::parser::{Event, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::Marker;
 use yaml_rust::{Yaml, YamlLoader};
@@ -6,6 +7,7 @@ use yaml_rust::{Yaml, YamlLoader};
 use std::fs;
 use std::io;
 use std::path::Path;
+use std::time::{Duration, SystemTime};
 
 struct ColorEventReceiver<T> {
     listener: T,
@@ -20,6 +22,22 @@ impl<T: FnMut(Event, Marker)> ColorEventReceiver<T> {
 impl<T: FnMut(Event, Marker)> MarkedEventReceiver for ColorEventReceiver<T> {
     fn on_event(&mut self, event: Event, marker: Marker) {
         (self.listener)(event, marker);
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Current {
+    changed: String,
+}
+
+impl Current {
+    fn new(changed: String) -> Self {
+        Self { changed }
+    }
+
+    fn now() -> Self {
+        let changed = humantime::format_rfc3339(SystemTime::now()).to_string();
+        Self::new(changed)
     }
 }
 
@@ -91,7 +109,8 @@ pub fn apply(
     let current_file = current_dir.join(scheme_file);
     fs::remove_dir_all(&current_dir)?;
     fs::create_dir_all(&current_dir)?;
-    fs::File::create(current_file)?;
+    let current_str = serde_yaml::to_string(&Current::now())?;
+    fs::write(current_file, current_str)?;
 
     Ok(())
 }
@@ -109,7 +128,7 @@ pub fn toggle(
 
     let mut index = 0;
     if let Ok(c) = status(scheme_dir.as_ref()) {
-        if let Some(i) = available_schemes.iter().position(|f| f == &c) {
+        if let Some(i) = available_schemes.iter().position(|f| f == &c.file_name) {
             index = if reverse {
                 (available_schemes.len() + i - 1) % available_schemes.len()
             } else {
@@ -135,16 +154,46 @@ pub fn list(dir: impl AsRef<Path>) -> Result<Vec<String>, io::Error> {
     })
 }
 
-pub fn status(scheme_dir: impl AsRef<Path>) -> anyhow::Result<String> {
-    let current_dir = scheme_dir.as_ref().join("current");
+pub struct Status {
+    pub file_name: String,
+    pub duration: Duration,
+}
 
-    match std::fs::read_dir(current_dir)?.into_iter().next() {
+impl Status {
+    pub fn new(file_name: String, duration: Duration) -> Self {
+        Status {
+            file_name,
+            duration,
+        }
+    }
+}
+
+pub fn status(scheme_dir: impl AsRef<Path>) -> anyhow::Result<Status> {
+    let mut current_file = scheme_dir.as_ref().join("current");
+
+    match fs::read_dir(&current_file)?.into_iter().next() {
         Some(Ok(d)) => match d.file_name().to_str().map(str::to_owned) {
-            Some(c) => return Ok(c),
+            Some(c) => {
+                current_file.push(&c);
+                match parse_current(current_file) {
+                    Ok(d) => return Ok(Status::new(c, d)),
+                    Err(_) => return Ok(Status::new(c, Duration::new(0, 0))),
+                }
+            }
             None => bail!("Error reading current colorscheme file"),
         },
         _ => bail!("No current colorscheme file found"),
     }
+}
+
+fn parse_current(file: impl AsRef<Path>) -> anyhow::Result<Duration> {
+    let status_str = fs::read_to_string(file)?;
+    let current: Current = serde_yaml::from_str(&status_str)?;
+    let time = humantime::parse_rfc3339(&current.changed)?;
+    let now = SystemTime::now();
+    let duration = now.duration_since(time)?;
+
+    Ok(duration)
 }
 
 fn parse_colors(file: impl AsRef<Path>) -> anyhow::Result<Yaml> {
