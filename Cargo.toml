@@ -8,9 +8,10 @@ edition = "2018"
 anyhow = "1.0"
 async-std = "1.9"
 clap = "3.0.0-beta.2"
-directories-next = "2.0"
+clap_generate = "3.0.0-beta.2"
 humantime = "2.1"
 nvim-rs = { version = "0.2.0", features = ["use_async-std"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
+shellexpand = "2.1.0"
 yaml-rust = "0.4.5"

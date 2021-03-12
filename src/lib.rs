@@ -187,7 +187,7 @@ pub fn status(scheme_dir: impl AsRef<Path>) -> anyhow::Result<Status> {
     }
 }
 
-pub fn neovim() -> anyhow::Result<()> {
+pub fn reload_neovim(file: impl AsRef<Path>) -> anyhow::Result<()> {
     let instances: Vec<_> = fs::read_dir("/tmp")?
         .into_iter()
         .filter_map(Result::ok)
@@ -205,7 +205,8 @@ pub fn neovim() -> anyhow::Result<()> {
         for p in instances.iter() {
             println!("instance: {}", p.display());
             let (nvim, _j) = nvim_rs::create::async_std::new_unix_socket(p, Dummy::new()).await?;
-            nvim.command("source ~/.config/nvim/init.vim").await?;
+            nvim.command(&format!("source {}", file.as_ref().display()))
+                .await?;
         }
 
         Ok::<(), anyhow::Error>(())
