@@ -122,8 +122,8 @@ fn main() {
 
     let config_file = tilde(app_m.value_of("configuration file").unwrap()).into_owned();
     let scheme_dir = tilde(app_m.value_of("colorscheme directory").unwrap()).into_owned();
-    let neovim_file = tilde(app_m.value_of("colorscheme directory").unwrap()).into_owned();
-    let reload_neovim = app_m.is_present("reload_neovim");
+    let neovim_file = tilde(app_m.value_of("neovim file").unwrap()).into_owned();
+    let reload_neovim = app_m.is_present("reload neovim");
 
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {

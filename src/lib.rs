@@ -1,5 +1,5 @@
 use anyhow::bail;
-use async_std::task::block_on;
+use async_std::task::{block_on, spawn};
 use nvim_rs::rpc::handler::Dummy;
 use serde::{Deserialize, Serialize};
 use yaml_rust::parser::{Event, MarkedEventReceiver, Parser};
@@ -7,6 +7,7 @@ use yaml_rust::scanner::Marker;
 use yaml_rust::{Yaml, YamlLoader};
 
 use std::path::Path;
+use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use std::{fs, io};
 
@@ -201,12 +202,25 @@ pub fn reload_neovim(file: impl AsRef<Path>) -> anyhow::Result<()> {
         .map(|d| d.path().join("0"))
         .collect();
 
+    let file = Arc::new(file.as_ref().to_owned());
     block_on(async {
-        for p in instances.iter() {
-            println!("instance: {}", p.display());
-            let (nvim, _j) = nvim_rs::create::async_std::new_unix_socket(p, Dummy::new()).await?;
-            nvim.command(&format!("source {}", file.as_ref().display()))
-                .await?;
+        let tasks = instances
+            .into_iter()
+            .map(|p| {
+                let f = Arc::clone(&file);
+
+                spawn(async move {
+                    let (nvim, _j) =
+                        nvim_rs::create::async_std::new_unix_socket(p, Dummy::new()).await?;
+                    nvim.command(&format!("source {}", f.display())).await?;
+
+                    Ok::<(), anyhow::Error>(())
+                })
+            })
+            .collect::<Vec<_>>();
+
+        for t in tasks.into_iter() {
+            t.await?;
         }
 
         Ok::<(), anyhow::Error>(())
