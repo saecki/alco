@@ -1,15 +1,16 @@
 use anyhow::bail;
-use async_std::task::{block_on, spawn};
-use nvim_rs::rpc::handler::Dummy;
 use serde::{Deserialize, Serialize};
 use yaml_rust::parser::{Event, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::Marker;
 use yaml_rust::{Yaml, YamlLoader};
 
 use std::path::Path;
-use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use std::{fs, io};
+
+pub use nvim::reload_neovim;
+
+mod nvim;
 
 struct ColorEventReceiver<T> {
     listener: T,
@@ -74,8 +75,8 @@ pub fn apply(
     let mut last_col = 0;
 
     let mut parser = Parser::new(config_str.chars());
-    let mut receiver = ColorEventReceiver::new(|event, mark| match event {
-        Event::Scalar(name, _, _, _) => {
+    let mut receiver = ColorEventReceiver::new(|event, mark| {
+        if let Event::Scalar(name, _, _, _) = event {
             if mark.line() != last_line {
                 if mark.col() == last_col {
                     current_path.pop();
@@ -95,22 +96,19 @@ pub fn apply(
                     last_line = mark.line();
                     last_col = mark.col();
                 }
-            } else {
-                if let Some(v) = value(&new_colors, &current_path) {
-                    if let Some(stringified) = stringify(v) {
-                        for i in line_index..mark.line() - 1 {
-                            new_config_str.push_str(config_lines[i]);
-                            new_config_str.push('\n');
-                        }
-                        new_config_str.push_str(&config_lines[mark.line() - 1][0..mark.col()]);
-                        new_config_str.push_str(&stringified);
+            } else if let Some(v) = value(&new_colors, &current_path) {
+                if let Some(stringified) = stringify(v) {
+                    for i in line_index..mark.line() - 1 {
+                        new_config_str.push_str(config_lines[i]);
                         new_config_str.push('\n');
-                        line_index = mark.line();
                     }
+                    new_config_str.push_str(&config_lines[mark.line() - 1][0..mark.col()]);
+                    new_config_str.push_str(&stringified);
+                    new_config_str.push('\n');
+                    line_index = mark.line();
                 }
             }
         }
-        _ => (),
     });
     parser.load(&mut receiver, true)?;
 
@@ -178,55 +176,14 @@ pub fn status(scheme_dir: impl AsRef<Path>) -> anyhow::Result<Status> {
             Some(c) => {
                 current_file.push(&c);
                 match parse_current(current_file) {
-                    Ok(d) => return Ok(Status::new(c, d)),
-                    Err(_) => return Ok(Status::new(c, Duration::new(0, 0))),
+                    Ok(d) => Ok(Status::new(c, d)),
+                    Err(_) => Ok(Status::new(c, Duration::new(0, 0))),
                 }
             }
             None => bail!("Error reading current colorscheme file"),
         },
         _ => bail!("No current colorscheme file found"),
     }
-}
-
-pub fn reload_neovim(file: impl AsRef<Path>) -> anyhow::Result<()> {
-    let instances: Vec<_> = fs::read_dir("/tmp")?
-        .into_iter()
-        .filter_map(Result::ok)
-        .filter(|d| d.metadata().map(|m| m.is_dir()).unwrap_or(false))
-        .filter(|d| {
-            d.file_name()
-                .to_str()
-                .map(|s| s.starts_with("nvim"))
-                .unwrap_or(false)
-        })
-        .map(|d| d.path().join("0"))
-        .collect();
-
-    let file = Arc::new(file.as_ref().to_owned());
-    block_on(async {
-        let tasks = instances
-            .into_iter()
-            .map(|p| {
-                let f = Arc::clone(&file);
-
-                spawn(async move {
-                    let (nvim, _j) =
-                        nvim_rs::create::async_std::new_unix_socket(p, Dummy::new()).await?;
-                    nvim.command(&format!("source {}", f.display())).await?;
-
-                    Ok::<(), anyhow::Error>(())
-                })
-            })
-            .collect::<Vec<_>>();
-
-        for t in tasks.into_iter() {
-            t.await?;
-        }
-
-        Ok::<(), anyhow::Error>(())
-    })?;
-
-    Ok(())
 }
 
 fn parse_current(file: impl AsRef<Path>) -> anyhow::Result<Duration> {
