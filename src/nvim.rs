@@ -1,4 +1,4 @@
-use async_std::task::{block_on, spawn};
+use async_std::task::spawn;
 use nvim_rs::create::async_std::new_unix_socket;
 use nvim_rs::rpc::handler::Dummy;
 
@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-pub fn reload_neovim(file: impl AsRef<Path>) -> anyhow::Result<()> {
+pub async fn reload_neovim(file: impl AsRef<Path>) -> anyhow::Result<()> {
     let instances: Vec<_> = fs::read_dir("/tmp")?
         .into_iter()
         .filter_map(Result::ok)
@@ -25,7 +25,7 @@ pub fn reload_neovim(file: impl AsRef<Path>) -> anyhow::Result<()> {
     }
 
     let file = Arc::new(file.as_ref().to_owned());
-    block_on(reload_instances(instances, file))?;
+    reload_instances(instances, file).await?;
 
     Ok(())
 }

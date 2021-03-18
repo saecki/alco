@@ -1,8 +1,8 @@
-# alacritty colorscheme
+# alco
 
 ### Usage
 ```
-alacritty colorscheme 0.1.0
+alco 0.1.0
 Saecki <tobiasschmitz2001@gmail.com>
 Update the colorscheme of alacritty.
 

@@ -9,8 +9,25 @@ use std::time::{Duration, SystemTime};
 use std::{fs, io};
 
 pub use nvim::reload_neovim;
+pub use tmux::reload_tmux;
 
+#[cfg(feature = "tmux")]
+mod tmux;
+#[cfg(not(feature = "tmux"))]
+mod tmux {
+    pub fn reload_tmux(_: impl AsRef<Path>) -> anyhow::Result<()> {
+        bail!("alco was compiled without the tmux feature flag");
+    }
+}
+
+#[cfg(feature = "neovim")]
 mod nvim;
+#[cfg(not(feature = "neovim"))]
+mod nvim {
+    pub fn reload_neovim(_: impl AsRef<Path>) -> anyhow::Result<()> {
+        bail!("alco was compiled without the neovim feature flag");
+    }
+}
 
 struct ColorEventReceiver<T> {
     listener: T,
