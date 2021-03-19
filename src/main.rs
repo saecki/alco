@@ -18,7 +18,7 @@ const ZSH: &str = "zsh";
 
 const DEFAULT_CONFIG_FILE: &str = "~/.config/alacritty/alacritty.yml";
 const DEFAULT_COLORSCHEME_DIR: &str = "~/.config/alacritty/colors/";
-const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/init.vim";
+const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/colors.vim";
 const DEFAULT_TMUX_FILE: &str = "~/.config/tmux/colors/current.conf";
 const DEFAULT_TMUX_SELECTOR: &str = "~/.config/tmux/colors/selector.yml";
 
