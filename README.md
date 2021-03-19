@@ -12,6 +12,7 @@ USAGE:
 FLAGS:
     -h, --help             Prints help information
     -v, --reload-neovim    Also reload neovim by sourcing a configuration file
+    -t, --reload-tmux      Also reload tmux by sourcing a configuration file
     -V, --version          Prints version information
 
 OPTIONS:
@@ -28,7 +29,15 @@ OPTIONS:
             elvish, powershell]
 
         --neovim-file <file>
-            The neovim configuration file which will be sourced [default: ~/.config/nvim/init.vim]
+            The neovim configuration file which will be sourced [default: ~/.config/nvim/colors.vim]
+
+        --tmux-file <file>
+            The tmux configuration file which will be overwritten and sourced [default:
+            ~/.config/tmux/colors/current.conf]
+
+        --tmux-selector <file>
+            The tmux selector file which contains a coloscheme mapping [default:
+            ~/.config/tmux/colors/selector.yml]
 
 
 SUBCOMMANDS:
