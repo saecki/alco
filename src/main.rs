@@ -20,7 +20,8 @@ const DEFAULT_CONFIG_FILE: &str = "~/.config/alacritty/alacritty.yml";
 const DEFAULT_COLORSCHEME_DIR: &str = "~/.config/alacritty/colors/";
 const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/colors.vim";
 const DEFAULT_TMUX_FILE: &str = "~/.config/tmux/colors/current.conf";
-const DEFAULT_TMUX_SELECTOR: &str = "~/.config/tmux/colors/selector.yml";
+const DEFAULT_TMUX_SELECTOR: &str = "~/.config/alco/tmux-selector.yml";
+const DEFAULT_CMUS_SELECTOR: &str = "~/.config/alco/cmus-selector.yml";
 
 struct TmuxOptions {
     reload: bool,
@@ -31,6 +32,11 @@ struct TmuxOptions {
 struct NeovimOptions {
     reload: bool,
     file: String,
+}
+
+struct CmusOptions {
+    reload: bool,
+    selector: String,
 }
 
 fn main() {
@@ -58,21 +64,6 @@ fn main() {
                 .about("The direcotry that contains colorscheme configurations"),
         )
         .arg(
-            Arg::new("reload neovim")
-                .long("reload-neovim")
-                .short('v')
-                .takes_value(false)
-                .about("Also reload neovim by sourcing a configuration file"),
-        )
-        .arg(
-            Arg::new("neovim file")
-                .long("neovim-file")
-                .default_value(DEFAULT_NEOVIM_FILE)
-                .value_name("file")
-                .value_hint(ValueHint::FilePath)
-                .about("The neovim configuration file which will be sourced"),
-        )
-        .arg(
             Arg::new("reload tmux")
                 .long("reload-tmux")
                 .short('t')
@@ -94,6 +85,36 @@ fn main() {
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
                 .about("The tmux selector file which contains a coloscheme mapping"),
+        )
+        .arg(
+            Arg::new("reload neovim")
+                .long("reload-neovim")
+                .short('n')
+                .takes_value(false)
+                .about("Also reload neovim by sourcing a configuration file"),
+        )
+        .arg(
+            Arg::new("neovim file")
+                .long("neovim-file")
+                .default_value(DEFAULT_NEOVIM_FILE)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .about("The neovim configuration file which will be sourced"),
+        )
+        .arg(
+            Arg::new("reload cmus")
+                .long("reload-cmus")
+                .short('m')
+                .takes_value(false)
+                .about("Also reload cmus by sourcing a configuration file"),
+        )
+        .arg(
+            Arg::new("cmus selector")
+                .long("cmus-selector")
+                .default_value(DEFAULT_CMUS_SELECTOR)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .about("The cmus selector file which contains a coloscheme mapping"),
         )
         .arg(
             Arg::new("generate completion")
@@ -169,14 +190,19 @@ fn main() {
         file: tilde(app_m.value_of("neovim file").unwrap()).into_owned(),
     };
 
+    let cmus = CmusOptions {
+        reload: app_m.is_present("reload cmus"),
+        selector: tilde(app_m.value_of("cmus selector").unwrap()).into_owned(),
+    };
+
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {
             let scheme_file = sub_m.value_of("colorscheme").unwrap();
-            apply(config_file, scheme_dir, scheme_file, tmux, neovim);
+            apply(config_file, scheme_dir, scheme_file, tmux, neovim, cmus);
         }
         Some(("toggle", sub_m)) => {
             let reverse = sub_m.is_present("reverse");
-            toggle(config_file, scheme_dir, reverse, tmux, neovim);
+            toggle(config_file, scheme_dir, reverse, tmux, neovim, cmus);
         }
         Some(("list", _)) => list(scheme_dir),
         Some(("status", sub_m)) => {
@@ -195,16 +221,36 @@ fn apply(
     scheme_file: &str,
     tmux: TmuxOptions,
     neovim: NeovimOptions,
+    cmus: CmusOptions,
 ) {
     if let Err(e) = alco::apply(config_file, scheme_dir, scheme_file) {
         println!("Error applying colorscheme {}:\n{:?}", scheme_file, e);
     } else {
-        block_on(async {
-            if tmux.reload {
-                reload_tmux(tmux.file, tmux.selector, scheme_file).await;
+        block_on(async move {
+            let t = if tmux.reload {
+                Some(spawn(reload_tmux(tmux.file, tmux.selector, scheme_file.to_owned())))
+            } else {
+                None
+            };
+            let n = if neovim.reload {
+                Some(spawn(reload_neovim(neovim.file)))
+            } else {
+                None
+            };
+            let m = if cmus.reload {
+                Some(spawn(reload_cmus(cmus.selector, scheme_file.to_owned())))
+            } else {
+                None
+            };
+
+            if let Some(t) = t {
+                t.await;
             }
-            if neovim.reload {
-                reload_neovim(neovim.file).await;
+            if let Some(n) = n {
+                n.await;
+            }
+            if let Some(m) = m {
+                m.await;
             }
         });
     }
@@ -215,18 +261,24 @@ fn toggle(
     reverse: bool,
     tmux: TmuxOptions,
     neovim: NeovimOptions,
+    cmus: CmusOptions,
 ) {
     match alco::toggle(config_file, scheme_dir, reverse) {
         Ok(c) => {
             println!("{}", c);
             block_on(async move {
                 let t = if tmux.reload {
-                    Some(spawn(reload_tmux(tmux.file, tmux.selector, c)))
+                    Some(spawn(reload_tmux(tmux.file, tmux.selector, c.clone())))
                 } else {
                     None
                 };
                 let n = if neovim.reload {
                     Some(spawn(reload_neovim(neovim.file)))
+                } else {
+                    None
+                };
+                let m = if cmus.reload {
+                    Some(spawn(reload_cmus(cmus.selector, c)))
                 } else {
                     None
                 };
@@ -236,6 +288,9 @@ fn toggle(
                 }
                 if let Some(n) = n {
                     n.await;
+                }
+                if let Some(m) = m {
+                    m.await;
                 }
             });
         }
@@ -281,12 +336,21 @@ async fn reload_tmux(
     scheme_file: impl AsRef<str>,
 ) {
     if let Err(e) = alco::reload_tmux(tmux_file, selector, scheme_file).await {
-        println!("Error reloading tmux sessions:\n{}", e);
+        println!("Error reloading tmux colorscheme:\n{}", e);
     }
 }
 
 async fn reload_neovim(file: impl AsRef<Path>) {
     if let Err(e) = alco::reload_neovim(file).await {
-        println!("Error reloading neovim instances:\n{}", e);
+        println!("Error reloading neovim colorscheme:\n{}", e);
+    }
+}
+
+async fn reload_cmus(
+    selector: impl AsRef<Path>,
+    scheme_file: impl AsRef<str>,
+) {
+    if let Err(e) = alco::reload_cmus(selector, scheme_file).await {
+        println!("Error reloading cmus colorscheme:\n{}", e);
     }
 }

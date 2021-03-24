@@ -1,13 +1,11 @@
 use anyhow::bail;
-use shellexpand::tilde;
 use yaml_rust::YamlLoader;
 
 use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-pub async fn reload_tmux(
-    tmux_file: impl AsRef<Path>,
+pub async fn reload_cmus(
     selector: impl AsRef<Path>,
     scheme_file: impl AsRef<str>,
 ) -> anyhow::Result<()> {
@@ -16,10 +14,9 @@ pub async fn reload_tmux(
 
     match super::selector(&selector, scheme_file.as_ref()) {
         Some(s) => {
-            fs::copy(tilde(s).as_ref(), tmux_file.as_ref())?;
-            Command::new("tmux")
-                .arg("source-file")
-                .arg(tmux_file.as_ref())
+            Command::new("cmus-remote")
+                .arg("-C")
+                .arg(&format!("colorscheme {}", s))
                 .output()?;
 
             Ok(())

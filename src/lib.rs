@@ -8,15 +8,23 @@ use std::path::Path;
 use std::time::{Duration, SystemTime};
 use std::{fs, io};
 
-pub use nvim::reload_neovim;
 pub use tmux::reload_tmux;
+pub use nvim::reload_neovim;
+pub use cmus::reload_cmus;
 
 #[cfg(feature = "tmux")]
 mod tmux;
 #[cfg(not(feature = "tmux"))]
 mod tmux {
-    pub fn reload_tmux(_: impl AsRef<Path>) -> anyhow::Result<()> {
-        bail!("alco was compiled without the tmux feature flag");
+    use anyhow::bail;
+    use std::path::Path;
+
+    pub async fn reload_tmux(
+        _: impl AsRef<Path>,
+        _: impl AsRef<Path>,
+        _: impl AsRef<str>,
+    ) -> anyhow::Result<()> {
+        bail!("alco was compiled without the tmux feature flag")
     }
 }
 
@@ -24,8 +32,26 @@ mod tmux {
 mod nvim;
 #[cfg(not(feature = "neovim"))]
 mod nvim {
-    pub fn reload_neovim(_: impl AsRef<Path>) -> anyhow::Result<()> {
-        bail!("alco was compiled without the neovim feature flag");
+    use anyhow::bail;
+    use std::path::Path;
+
+    pub async fn reload_neovim(_: impl AsRef<Path>) -> anyhow::Result<()> {
+        bail!("alco was compiled without the neovim feature flag")
+    }
+}
+
+#[cfg(feature = "cmus")]
+mod cmus;
+#[cfg(not(feature = "cmus"))]
+mod cmus {
+    use anyhow::bail;
+    use std::path::Path;
+
+    pub async fn reload_cmus(
+        _: impl AsRef<Path>,
+        _: impl AsRef<str>,
+    ) -> anyhow::Result<()> {
+        bail!("alco was compiled without the tmux feature flag")
     }
 }
 
@@ -248,4 +274,19 @@ fn stringify(value: &Yaml) -> Option<String> {
         Yaml::Boolean(b) => Some(b.to_string()),
         _ => None,
     }
+}
+
+fn selector<'a>(selector: &'a Yaml, key: &'_ str) -> Option<&'a str> {
+    let map = selector.as_hash()?;
+    let mut default = None;
+
+    for (k, v) in map.iter() {
+        if k.as_str()? == key {
+            return v.as_str();
+        } else if k.as_str()? == "else" {
+            default = v.as_str();
+        }
+    }
+
+    default
 }

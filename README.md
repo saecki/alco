@@ -11,11 +11,16 @@ USAGE:
 
 FLAGS:
     -h, --help             Prints help information
-    -v, --reload-neovim    Also reload neovim by sourcing a configuration file
+    -m, --reload-cmus      Also reload cmus by sourcing a configuration file
+    -n, --reload-neovim    Also reload neovim by sourcing a configuration file
     -t, --reload-tmux      Also reload tmux by sourcing a configuration file
     -V, --version          Prints version information
 
 OPTIONS:
+        --cmus-selector <file>
+            The cmus selector file which contains a coloscheme mapping [default:
+            ~/.config/alco/cmus-selector.yml]
+
     -C, --colorscheme-dir <directory>
             The direcotry that contains colorscheme configurations [default:
             ~/.config/alacritty/colors/]
@@ -37,7 +42,7 @@ OPTIONS:
 
         --tmux-selector <file>
             The tmux selector file which contains a coloscheme mapping [default:
-            ~/.config/tmux/colors/selector.yml]
+            ~/.config/alco/tmux-selector.yml]
 
 
 SUBCOMMANDS:
@@ -46,4 +51,12 @@ SUBCOMMANDS:
     list      List available colorschemes
     status    Print the current status
     toggle    Toggle the colorscheme between available options
+```
+
+### Selector files
+__Example__
+```
+dark-theme: "tmux-dark-theme"
+light-theme: "tmux-light-theme"
+else: "tmux-default-theme"
 ```
