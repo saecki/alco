@@ -12,6 +12,13 @@ pub use tmux::reload_tmux;
 pub use nvim::reload_neovim;
 pub use cmus::reload_cmus;
 
+pub const DEFAULT_CONFIG_FILE: &str = "~/.config/alacritty/alacritty.yml";
+pub const DEFAULT_COLORSCHEME_DIR: &str = "~/.config/alacritty/colors/";
+pub const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/colors.vim";
+pub const DEFAULT_TMUX_FILE: &str = "~/.config/tmux/colors/current.conf";
+pub const DEFAULT_TMUX_SELECTOR: &str = "~/.config/alco/tmux-selector.yml";
+pub const DEFAULT_CMUS_SELECTOR: &str = "~/.config/alco/cmus-selector.yml";
+
 #[cfg(feature = "tmux")]
 mod tmux;
 #[cfg(not(feature = "tmux"))]

@@ -16,13 +16,6 @@ const FISH: &str = "fish";
 const PWRSH: &str = "powershell";
 const ZSH: &str = "zsh";
 
-const DEFAULT_CONFIG_FILE: &str = "~/.config/alacritty/alacritty.yml";
-const DEFAULT_COLORSCHEME_DIR: &str = "~/.config/alacritty/colors/";
-const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/colors.vim";
-const DEFAULT_TMUX_FILE: &str = "~/.config/tmux/colors/current.conf";
-const DEFAULT_TMUX_SELECTOR: &str = "~/.config/alco/tmux-selector.yml";
-const DEFAULT_CMUS_SELECTOR: &str = "~/.config/alco/cmus-selector.yml";
-
 struct TmuxOptions {
     reload: bool,
     selector: String,
@@ -49,7 +42,7 @@ fn main() {
             Arg::new("configuration file")
                 .long("config-file")
                 .short('c')
-                .default_value(DEFAULT_CONFIG_FILE)
+                .default_value(alco::DEFAULT_CONFIG_FILE)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
                 .about("Alacritty's configuration file in which values are replaced"),
@@ -58,7 +51,7 @@ fn main() {
             Arg::new("colorscheme directory")
                 .long("colorscheme-dir")
                 .short('C')
-                .default_value(DEFAULT_COLORSCHEME_DIR)
+                .default_value(alco::DEFAULT_COLORSCHEME_DIR)
                 .value_name("directory")
                 .value_hint(ValueHint::DirPath)
                 .about("The direcotry that contains colorscheme configurations"),
@@ -80,7 +73,7 @@ fn main() {
         .arg(
             Arg::new("tmux file")
                 .long("tmux-file")
-                .default_value(DEFAULT_TMUX_FILE)
+                .default_value(alco::DEFAULT_TMUX_FILE)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
                 .about("The tmux configuration file which will be overwritten and sourced"),
@@ -88,7 +81,7 @@ fn main() {
         .arg(
             Arg::new("tmux selector")
                 .long("tmux-selector")
-                .default_value(DEFAULT_TMUX_SELECTOR)
+                .default_value(alco::DEFAULT_TMUX_SELECTOR)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
                 .about("The tmux selector file which contains a coloscheme mapping"),
@@ -104,7 +97,7 @@ fn main() {
         .arg(
             Arg::new("neovim file")
                 .long("neovim-file")
-                .default_value(DEFAULT_NEOVIM_FILE)
+                .default_value(alco::DEFAULT_NEOVIM_FILE)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
                 .about("The neovim configuration file which will be sourced"),
@@ -120,7 +113,7 @@ fn main() {
         .arg(
             Arg::new("cmus selector")
                 .long("cmus-selector")
-                .default_value(DEFAULT_CMUS_SELECTOR)
+                .default_value(alco::DEFAULT_CMUS_SELECTOR)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
                 .about("The cmus selector file which contains a coloscheme mapping"),
