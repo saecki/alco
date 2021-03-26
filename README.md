@@ -11,6 +11,7 @@ USAGE:
 
 FLAGS:
     -h, --help             Prints help information
+    -a, --reload-all       Reload all additional colorschemes
     -m, --reload-cmus      Also reload cmus by sourcing a configuration file
     -n, --reload-neovim    Also reload neovim by sourcing a configuration file
     -t, --reload-tmux      Also reload tmux by sourcing a configuration file
@@ -54,9 +55,17 @@ SUBCOMMANDS:
 ```
 
 ### Selector files
+Selctor files contain a mapping from the alacritty colorscheme filename to the respective colorscheme for the specific application. In some cases this might be a path in other cases just a name.
+
+| Application | Type   |
+|-------------|--------|
+| tmux        | `path` |
+| cmus        | `name` |
+
 __Example__
+A `tmux-selector.yml` file
 ```
-dark-theme: "tmux-dark-theme"
-light-theme: "tmux-light-theme"
-else: "tmux-default-theme"
+my-dark-theme.yml: "~/.config/tmux/colors/my-dark-theme.conf"
+my-light-theme.yml: "~/.config/tmux/colors/my-light-theme.conf"
+else: "~/.config/tmux/colors/my-dark-theme.conf" # default to a dark theme
 ```

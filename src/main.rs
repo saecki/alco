@@ -63,11 +63,18 @@ fn main() {
                 .value_hint(ValueHint::DirPath)
                 .about("The direcotry that contains colorscheme configurations"),
         )
+        .arg(Arg::new("reload all")
+             .long("reload-all")
+             .short('a')
+             .takes_value(false)
+             .about("Reload all additional colorschemes")
+         )
         .arg(
             Arg::new("reload tmux")
                 .long("reload-tmux")
                 .short('t')
                 .takes_value(false)
+                .conflicts_with("reload all")
                 .about("Also reload tmux by sourcing a configuration file"),
         )
         .arg(
@@ -91,6 +98,7 @@ fn main() {
                 .long("reload-neovim")
                 .short('n')
                 .takes_value(false)
+                .conflicts_with("reload all")
                 .about("Also reload neovim by sourcing a configuration file"),
         )
         .arg(
@@ -106,6 +114,7 @@ fn main() {
                 .long("reload-cmus")
                 .short('m')
                 .takes_value(false)
+                .conflicts_with("reload all")
                 .about("Also reload cmus by sourcing a configuration file"),
         )
         .arg(
@@ -179,19 +188,21 @@ fn main() {
     let config_file = tilde(app_m.value_of("configuration file").unwrap()).into_owned();
     let scheme_dir = tilde(app_m.value_of("colorscheme directory").unwrap()).into_owned();
 
+    let reload_all = app_m.is_present("reload all");
+
     let tmux = TmuxOptions {
-        reload: app_m.is_present("reload tmux"),
+        reload: app_m.is_present("reload tmux") | reload_all,
         file: tilde(app_m.value_of("tmux file").unwrap()).into_owned(),
         selector: tilde(app_m.value_of("tmux selector").unwrap()).into_owned(),
     };
 
     let neovim = NeovimOptions {
-        reload: app_m.is_present("reload neovim"),
+        reload: app_m.is_present("reload neovim") | reload_all,
         file: tilde(app_m.value_of("neovim file").unwrap()).into_owned(),
     };
 
     let cmus = CmusOptions {
-        reload: app_m.is_present("reload cmus"),
+        reload: app_m.is_present("reload cmus") | reload_all,
         selector: tilde(app_m.value_of("cmus selector").unwrap()).into_owned(),
     };
 
