@@ -6,7 +6,7 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-pub async fn reload_tmux(
+pub fn reload_tmux(
     tmux_file: impl AsRef<Path>,
     selector: impl AsRef<Path>,
     scheme_file: impl AsRef<str>,

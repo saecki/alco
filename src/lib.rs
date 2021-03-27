@@ -26,7 +26,7 @@ mod tmux {
     use anyhow::bail;
     use std::path::Path;
 
-    pub async fn reload_tmux(
+    pub fn reload_tmux(
         _: impl AsRef<Path>,
         _: impl AsRef<Path>,
         _: impl AsRef<str>,
@@ -54,7 +54,7 @@ mod cmus {
     use anyhow::bail;
     use std::path::Path;
 
-    pub async fn reload_cmus(
+    pub fn reload_cmus(
         _: impl AsRef<Path>,
         _: impl AsRef<str>,
     ) -> anyhow::Result<()> {

@@ -339,7 +339,7 @@ async fn reload_tmux(
     selector: impl AsRef<Path>,
     scheme_file: impl AsRef<str>,
 ) {
-    if let Err(e) = alco::reload_tmux(tmux_file, selector, scheme_file).await {
+    if let Err(e) = alco::reload_tmux(tmux_file, selector, scheme_file) {
         println!("Error reloading tmux colorscheme:\n{}", e);
     }
 }
@@ -354,7 +354,7 @@ async fn reload_cmus(
     selector: impl AsRef<Path>,
     scheme_file: impl AsRef<str>,
 ) {
-    if let Err(e) = alco::reload_cmus(selector, scheme_file).await {
+    if let Err(e) = alco::reload_cmus(selector, scheme_file) {
         println!("Error reloading cmus colorscheme:\n{}", e);
     }
 }
