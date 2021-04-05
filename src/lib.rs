@@ -8,9 +8,9 @@ use std::path::Path;
 use std::time::{Duration, SystemTime};
 use std::{fs, io};
 
-pub use tmux::reload_tmux;
-pub use nvim::reload_neovim;
 pub use cmus::reload_cmus;
+pub use nvim::reload_neovim;
+pub use tmux::reload_tmux;
 
 pub const DEFAULT_CONFIG_FILE: &str = "~/.config/alacritty/alacritty.yml";
 pub const DEFAULT_COLORSCHEME_DIR: &str = "~/.config/alacritty/colors/";
@@ -54,10 +54,7 @@ mod cmus {
     use anyhow::bail;
     use std::path::Path;
 
-    pub fn reload_cmus(
-        _: impl AsRef<Path>,
-        _: impl AsRef<str>,
-    ) -> anyhow::Result<()> {
+    pub fn reload_cmus(_: impl AsRef<Path>, _: impl AsRef<str>) -> anyhow::Result<()> {
         bail!("alco was compiled without the tmux feature flag")
     }
 }

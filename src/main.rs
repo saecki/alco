@@ -56,12 +56,13 @@ fn main() {
                 .value_hint(ValueHint::DirPath)
                 .about("The direcotry that contains colorscheme configurations"),
         )
-        .arg(Arg::new("reload all")
-             .long("reload-all")
-             .short('a')
-             .takes_value(false)
-             .about("Reload all additional colorschemes")
-         )
+        .arg(
+            Arg::new("reload all")
+                .long("reload-all")
+                .short('a')
+                .takes_value(false)
+                .about("Reload all additional colorschemes"),
+        )
         .arg(
             Arg::new("reload tmux")
                 .long("reload-tmux")
@@ -232,7 +233,11 @@ fn apply(
     } else {
         block_on(async move {
             let t = if tmux.reload {
-                Some(spawn(reload_tmux(tmux.file, tmux.selector, scheme_file.to_owned())))
+                Some(spawn(reload_tmux(
+                    tmux.file,
+                    tmux.selector,
+                    scheme_file.to_owned(),
+                )))
             } else {
                 None
             };
@@ -350,10 +355,7 @@ async fn reload_neovim(file: impl AsRef<Path>) {
     }
 }
 
-async fn reload_cmus(
-    selector: impl AsRef<Path>,
-    scheme_file: impl AsRef<str>,
-) {
+async fn reload_cmus(selector: impl AsRef<Path>, scheme_file: impl AsRef<str>) {
     if let Err(e) = alco::reload_cmus(selector, scheme_file) {
         println!("Error reloading cmus colorscheme:\n{}", e);
     }
