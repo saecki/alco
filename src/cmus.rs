@@ -52,20 +52,16 @@ fn write_autosave(cmus_scheme: impl AsRef<str>) -> anyhow::Result<()> {
     let mut new_autosave_str = String::with_capacity(original_autosave_str.capacity());
     for l in original_autosave_str.lines() {
         if l.starts_with("set color_") {
-            println!("line: {}", l);
             if let Some(var) = l.split('=').next() {
-                println!("var: {}", var);
                 let new = new_scheme
                     .iter()
                     .find(|&s| s.starts_with(var))
                     .and_then(|s| s.split('=').skip(1).next());
-                println!("new: {:?}", new);
 
                 let new_val = match new {
                     Some(val) => val.trim(),
                     None => "default",
                 };
-                println!("new_val: {:?}", new_val);
 
                 new_autosave_str.push_str(var);
                 new_autosave_str.push('=');
