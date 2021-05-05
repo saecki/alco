@@ -27,6 +27,12 @@ struct NeovimOptions {
     file: String,
 }
 
+struct DeltaOption {
+    reload: bool,
+    selector: String,
+    file: String,
+}
+
 struct CmusOptions {
     reload: bool,
     selector: String,
@@ -102,6 +108,30 @@ fn main() {
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
                 .about("The neovim configuration file which will be sourced"),
+        )
+        .arg(
+            Arg::new("reload delta")
+                .long("reload-delta")
+                .short('n')
+                .takes_value(false)
+                .conflicts_with("reload all")
+                .about("Also reload delta by updating the configuration file"),
+        )
+        .arg(
+            Arg::new("delta file")
+                .long("delta-file")
+                .default_value(alco::DEFAULT_DELTA_FILE)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .about("The delta configuration file which will be overwritten"),
+        )
+        .arg(
+            Arg::new("delta selector")
+                .long("delta-selector")
+                .default_value(alco::DEFAULT_DELTA_SELECTOR)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .about("The delta selector file which contains a coloscheme mapping"),
         )
         .arg(
             Arg::new("reload cmus")
@@ -195,6 +225,12 @@ fn main() {
         file: tilde(app_m.value_of("neovim file").unwrap()).into_owned(),
     };
 
+    let delta = DeltaOption {
+        reload: app_m.is_present("reload delta") | reload_all,
+        file: tilde(app_m.value_of("delta file").unwrap()).into_owned(),
+        selector: tilde(app_m.value_of("delta selector").unwrap()).into_owned(),
+    };
+
     let cmus = CmusOptions {
         reload: app_m.is_present("reload cmus") | reload_all,
         selector: tilde(app_m.value_of("cmus selector").unwrap()).into_owned(),
@@ -203,11 +239,19 @@ fn main() {
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {
             let scheme_file = sub_m.value_of("colorscheme").unwrap();
-            apply(config_file, scheme_dir, scheme_file, tmux, neovim, cmus);
+            apply(
+                config_file,
+                scheme_dir,
+                scheme_file,
+                tmux,
+                neovim,
+                delta,
+                cmus,
+            );
         }
         Some(("toggle", sub_m)) => {
             let reverse = sub_m.is_present("reverse");
-            toggle(config_file, scheme_dir, reverse, tmux, neovim, cmus);
+            toggle(config_file, scheme_dir, reverse, tmux, neovim, delta, cmus);
         }
         Some(("list", _)) => list(scheme_dir),
         Some(("status", sub_m)) => {
@@ -226,6 +270,7 @@ fn apply(
     scheme_file: &str,
     tmux: TmuxOptions,
     neovim: NeovimOptions,
+    delta: DeltaOption,
     cmus: CmusOptions,
 ) {
     if let Err(e) = alco::apply(config_file, scheme_dir, scheme_file) {
@@ -246,6 +291,15 @@ fn apply(
             } else {
                 None
             };
+            let d = if delta.reload {
+                Some(spawn(reload_delta(
+                    delta.file,
+                    delta.selector,
+                    scheme_file.to_owned(),
+                )))
+            } else {
+                None
+            };
             let m = if cmus.reload {
                 Some(spawn(reload_cmus(cmus.selector, scheme_file.to_owned())))
             } else {
@@ -257,6 +311,9 @@ fn apply(
             }
             if let Some(n) = n {
                 n.await;
+            }
+            if let Some(d) = d {
+                d.await;
             }
             if let Some(m) = m {
                 m.await;
@@ -270,6 +327,7 @@ fn toggle(
     reverse: bool,
     tmux: TmuxOptions,
     neovim: NeovimOptions,
+    delta: DeltaOption,
     cmus: CmusOptions,
 ) {
     match alco::toggle(config_file, scheme_dir, reverse) {
@@ -286,6 +344,11 @@ fn toggle(
                 } else {
                     None
                 };
+                let d = if delta.reload {
+                    Some(spawn(reload_delta(delta.file, delta.selector, c.clone())))
+                } else {
+                    None
+                };
                 let m = if cmus.reload {
                     Some(spawn(reload_cmus(cmus.selector, c)))
                 } else {
@@ -294,6 +357,9 @@ fn toggle(
 
                 if let Some(t) = t {
                     t.await;
+                }
+                if let Some(d) = d {
+                    d.await;
                 }
                 if let Some(n) = n {
                     n.await;
@@ -352,6 +418,16 @@ async fn reload_tmux(
 async fn reload_neovim(file: impl AsRef<Path>) {
     if let Err(e) = alco::reload_neovim(file).await {
         println!("Error reloading neovim colorscheme:\n{}", e);
+    }
+}
+
+async fn reload_delta(
+    delta_file: impl AsRef<Path>,
+    selector: impl AsRef<Path>,
+    scheme_file: impl AsRef<str>,
+) {
+    if let Err(e) = alco::reload_delta(delta_file, selector, scheme_file) {
+        println!("Error reloading delta colorscheme:\n{}", e);
     }
 }
 

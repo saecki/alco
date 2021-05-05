@@ -9,14 +9,17 @@ use std::time::{Duration, SystemTime};
 use std::{fs, io};
 
 pub use cmus::reload_cmus;
+pub use delta::reload_delta;
 pub use nvim::reload_neovim;
 pub use tmux::reload_tmux;
 
 pub const DEFAULT_CONFIG_FILE: &str = "~/.config/alacritty/alacritty.yml";
 pub const DEFAULT_COLORSCHEME_DIR: &str = "~/.config/alacritty/colors/";
-pub const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/colors.vim";
 pub const DEFAULT_TMUX_FILE: &str = "~/.config/tmux/colors/current.conf";
 pub const DEFAULT_TMUX_SELECTOR: &str = "~/.config/alco/tmux-selector.yml";
+pub const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/colors.vim";
+pub const DEFAULT_DELTA_FILE: &str = "~/.config/delta/colors/current.gitconfig";
+pub const DEFAULT_DELTA_SELECTOR: &str = "~/.config/alco/delta-selector.yml";
 pub const DEFAULT_CMUS_SELECTOR: &str = "~/.config/alco/cmus-selector.yml";
 
 #[cfg(feature = "tmux")]
@@ -44,6 +47,22 @@ mod nvim {
 
     pub async fn reload_neovim(_: impl AsRef<Path>) -> anyhow::Result<()> {
         bail!("alco was compiled without the neovim feature flag")
+    }
+}
+
+#[cfg(feature = "delta")]
+mod delta;
+#[cfg(not(feature = "delta"))]
+mod delta {
+    use anyhow::bail;
+    use std::path::Path;
+
+    pub fn reload_delta(
+        _: impl AsRef<Path>,
+        _: impl AsRef<Path>,
+        _: impl AsRef<str>,
+    ) -> anyhow::Result<()> {
+        bail!("alco was compiled without the delta feature flag")
     }
 }
 
