@@ -112,7 +112,7 @@ fn main() {
         .arg(
             Arg::new("reload delta")
                 .long("reload-delta")
-                .short('n')
+                .short('d')
                 .takes_value(false)
                 .conflicts_with("reload all")
                 .about("Also reload delta by updating the configuration file"),
