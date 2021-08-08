@@ -56,7 +56,7 @@ fn write_autosave(cmus_scheme: impl AsRef<str>) -> anyhow::Result<()> {
                 let new = new_scheme
                     .iter()
                     .find(|&s| s.starts_with(var))
-                    .and_then(|s| s.split('=').skip(1).next());
+                    .and_then(|s| s.split('=').nth(1));
 
                 let new_val = match new {
                     Some(val) => val.trim(),

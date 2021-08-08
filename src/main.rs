@@ -331,11 +331,15 @@ fn toggle(
     cmus: CmusOptions,
 ) {
     match alco::toggle(config_file, scheme_dir, reverse) {
-        Ok(c) => {
-            println!("{}", c);
+        Ok(scheme_file) => {
+            println!("{}", scheme_file);
             block_on(async move {
                 let t = if tmux.reload {
-                    Some(spawn(reload_tmux(tmux.file, tmux.selector, c.clone())))
+                    Some(spawn(reload_tmux(
+                        tmux.file,
+                        tmux.selector,
+                        scheme_file.clone(),
+                    )))
                 } else {
                     None
                 };
@@ -345,12 +349,16 @@ fn toggle(
                     None
                 };
                 let d = if delta.reload {
-                    Some(spawn(reload_delta(delta.file, delta.selector, c.clone())))
+                    Some(spawn(reload_delta(
+                        delta.file,
+                        delta.selector,
+                        scheme_file.clone(),
+                    )))
                 } else {
                     None
                 };
                 let m = if cmus.reload {
-                    Some(spawn(reload_cmus(cmus.selector, c)))
+                    Some(spawn(reload_cmus(cmus.selector, scheme_file)))
                 } else {
                     None
                 };

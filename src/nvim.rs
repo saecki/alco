@@ -37,13 +37,13 @@ async fn reload_instances(instances: Vec<PathBuf>, file: Arc<PathBuf>) -> anyhow
             let f = Arc::clone(&file);
 
             spawn(async move {
-                let (nvim, j) = new_unix_socket(p, Dummy::new()).await?;
+                let (nvim, j) = new_unix_socket(&p, Dummy::new()).await?;
                 nvim.command(&format!("source {}", f.display())).await?;
                 nvim.command("redraw!").await?;
                 nvim.command("redrawstatus!").await?;
                 nvim.command("redrawtabline").await?;
                 nvim.command("silent! AirlineRefresh").await?;
-                let _ = j.cancel().await;
+                j.cancel().await;
 
                 Ok::<(), anyhow::Error>(())
             })
