@@ -42,7 +42,8 @@ async fn reload_instances(instances: Vec<PathBuf>, file: Arc<PathBuf>) -> anyhow
                 nvim.command("redraw!").await?;
                 nvim.command("redrawstatus!").await?;
                 nvim.command("redrawtabline").await?;
-                nvim.command("silent! AirlineRefresh").await?;
+                nvim.command("lua require(\"config.lualine\").setup()")
+                    .await?;
                 j.cancel().await;
 
                 Ok::<(), anyhow::Error>(())
