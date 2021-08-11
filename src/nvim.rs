@@ -3,10 +3,9 @@ use nvim_rs::create::async_std::new_unix_socket;
 use nvim_rs::rpc::handler::Dummy;
 
 use std::fs;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::path::PathBuf;
 
-pub async fn reload_neovim(file: impl AsRef<Path>) -> anyhow::Result<()> {
+pub async fn reload_neovim() -> anyhow::Result<()> {
     let instances: Vec<_> = fs::read_dir("/tmp")?
         .into_iter()
         .filter_map(Result::ok)
@@ -19,22 +18,18 @@ pub async fn reload_neovim(file: impl AsRef<Path>) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let file = Arc::new(file.as_ref().to_owned());
-    reload_instances(instances, file).await?;
+    reload_instances(instances).await?;
 
     Ok(())
 }
 
-async fn reload_instances(instances: Vec<PathBuf>, file: Arc<PathBuf>) -> anyhow::Result<()> {
+async fn reload_instances(instances: Vec<PathBuf>) -> anyhow::Result<()> {
     let tasks = instances
         .into_iter()
         .map(|p| {
-            let f = Arc::clone(&file);
-
             spawn(async move {
                 let (nvim, j) = new_unix_socket(&p, Dummy::new()).await?;
-                nvim.command(&format!("source {}", f.display())).await?;
-                nvim.command("lua require(\"config.lualine\").setup()").await?;
+                nvim.command("lua require(\"style\").apply()").await?;
                 nvim.command("redraw!").await?;
                 nvim.command("redrawstatus!").await?;
                 nvim.command("redrawtabline").await?;

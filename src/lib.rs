@@ -45,7 +45,7 @@ mod nvim {
     use anyhow::bail;
     use std::path::Path;
 
-    pub async fn reload_neovim(_: impl AsRef<Path>) -> anyhow::Result<()> {
+    pub async fn reload_neovim() -> anyhow::Result<()> {
         bail!("alco was compiled without the neovim feature flag")
     }
 }
