@@ -11,12 +11,7 @@ pub async fn reload_neovim(file: impl AsRef<Path>) -> anyhow::Result<()> {
         .into_iter()
         .filter_map(Result::ok)
         .filter(|d| d.metadata().map(|m| m.is_dir()).unwrap_or(false))
-        .filter(|d| {
-            d.file_name()
-                .to_str()
-                .map(|s| s.starts_with("nvim"))
-                .unwrap_or(false)
-        })
+        .filter(|d| d.file_name().to_str().map(|s| s.starts_with("nvim")).unwrap_or(false))
         .map(|d| d.path().join("0"))
         .collect();
 
@@ -39,11 +34,10 @@ async fn reload_instances(instances: Vec<PathBuf>, file: Arc<PathBuf>) -> anyhow
             spawn(async move {
                 let (nvim, j) = new_unix_socket(&p, Dummy::new()).await?;
                 nvim.command(&format!("source {}", f.display())).await?;
+                nvim.command("lua require(\"config.lualine\").setup()").await?;
                 nvim.command("redraw!").await?;
                 nvim.command("redrawstatus!").await?;
                 nvim.command("redrawtabline").await?;
-                nvim.command("lua require(\"config.lualine\").setup()")
-                    .await?;
                 j.cancel().await;
 
                 Ok::<(), anyhow::Error>(())

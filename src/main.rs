@@ -161,12 +161,7 @@ fn main() {
             App::new("apply")
                 .bin_name("alco-apply")
                 .about("Apply a colorscheme")
-                .arg(
-                    Arg::new("colorscheme")
-                        .index(1)
-                        .value_name("schemefile")
-                        .required(true),
-                ),
+                .arg(Arg::new("colorscheme").index(1).value_name("schemefile").required(true)),
             App::new("toggle")
                 .bin_name("alco-toggle")
                 .about("Toggle the colorscheme between available options")
@@ -177,19 +172,14 @@ fn main() {
                         .takes_value(false)
                         .about("Toggle in reverse order between available colorschemes"),
                 ),
-            App::new("list")
-                .bin_name("alco-list")
-                .about("List available colorschemes"),
-            App::new("status")
-                .bin_name("alco-status")
-                .about("Print the current status")
-                .arg(
-                    Arg::new("time")
-                        .long("time")
-                        .short('t')
-                        .takes_value(false)
-                        .about("Print the duration since the last change"),
-                ),
+            App::new("list").bin_name("alco-list").about("List available colorschemes"),
+            App::new("status").bin_name("alco-status").about("Print the current status").arg(
+                Arg::new("time")
+                    .long("time")
+                    .short('t')
+                    .takes_value(false)
+                    .about("Print the duration since the last change"),
+            ),
         ]);
 
     let app_m = app.clone().get_matches();
@@ -239,15 +229,7 @@ fn main() {
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {
             let scheme_file = sub_m.value_of("colorscheme").unwrap();
-            apply(
-                config_file,
-                scheme_dir,
-                scheme_file,
-                tmux,
-                neovim,
-                delta,
-                cmus,
-            );
+            apply(config_file, scheme_dir, scheme_file, tmux, neovim, delta, cmus);
         }
         Some(("toggle", sub_m)) => {
             let reverse = sub_m.is_present("reverse");
@@ -278,25 +260,13 @@ fn apply(
     } else {
         block_on(async move {
             let t = if tmux.reload {
-                Some(spawn(reload_tmux(
-                    tmux.file,
-                    tmux.selector,
-                    scheme_file.to_owned(),
-                )))
+                Some(spawn(reload_tmux(tmux.file, tmux.selector, scheme_file.to_owned())))
             } else {
                 None
             };
-            let n = if neovim.reload {
-                Some(spawn(reload_neovim(neovim.file)))
-            } else {
-                None
-            };
+            let n = if neovim.reload { Some(spawn(reload_neovim(neovim.file))) } else { None };
             let d = if delta.reload {
-                Some(spawn(reload_delta(
-                    delta.file,
-                    delta.selector,
-                    scheme_file.to_owned(),
-                )))
+                Some(spawn(reload_delta(delta.file, delta.selector, scheme_file.to_owned())))
             } else {
                 None
             };
@@ -335,25 +305,13 @@ fn toggle(
             println!("{}", scheme_file);
             block_on(async move {
                 let t = if tmux.reload {
-                    Some(spawn(reload_tmux(
-                        tmux.file,
-                        tmux.selector,
-                        scheme_file.clone(),
-                    )))
+                    Some(spawn(reload_tmux(tmux.file, tmux.selector, scheme_file.clone())))
                 } else {
                     None
                 };
-                let n = if neovim.reload {
-                    Some(spawn(reload_neovim(neovim.file)))
-                } else {
-                    None
-                };
+                let n = if neovim.reload { Some(spawn(reload_neovim(neovim.file))) } else { None };
                 let d = if delta.reload {
-                    Some(spawn(reload_delta(
-                        delta.file,
-                        delta.selector,
-                        scheme_file.clone(),
-                    )))
+                    Some(spawn(reload_delta(delta.file, delta.selector, scheme_file.clone())))
                 } else {
                     None
                 };
@@ -400,11 +358,7 @@ fn status(scheme_dir: impl AsRef<Path>, time: bool) {
         Ok(s) => {
             if time {
                 let seconds = Duration::from_secs(s.duration.as_secs());
-                println!(
-                    "{} changed {} ago",
-                    s.file_name,
-                    humantime::format_duration(seconds),
-                );
+                println!("{} changed {} ago", s.file_name, humantime::format_duration(seconds),);
             } else {
                 println!("{}", s.file_name);
             }

@@ -117,10 +117,7 @@ pub struct Status {
 
 impl Status {
     pub fn new(file_name: String, duration: Duration) -> Self {
-        Status {
-            file_name,
-            duration,
-        }
+        Status { file_name, duration }
     }
 }
 

@@ -15,10 +15,7 @@ pub fn reload_cmus(selector: impl AsRef<Path>, scheme_file: impl AsRef<str>) -> 
 
     match super::selector(&selector, scheme_file.as_ref()) {
         Some(s) => {
-            Command::new("cmus-remote")
-                .arg("-C")
-                .arg(&format!("colorscheme {}", s))
-                .output()?;
+            Command::new("cmus-remote").arg("-C").arg(&format!("colorscheme {}", s)).output()?;
 
             write_autosave(s)?;
 
@@ -44,10 +41,8 @@ fn write_autosave(cmus_scheme: impl AsRef<str>) -> anyhow::Result<()> {
         bail!("Cmus colorscheme not found");
     }
 
-    let new_scheme: Vec<_> = new_scheme_str
-        .lines()
-        .filter(|&s| s.starts_with("set color_"))
-        .collect();
+    let new_scheme: Vec<_> =
+        new_scheme_str.lines().filter(|&s| s.starts_with("set color_")).collect();
 
     let mut new_autosave_str = String::with_capacity(original_autosave_str.capacity());
     for l in original_autosave_str.lines() {

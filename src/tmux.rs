@@ -17,10 +17,7 @@ pub fn reload_tmux(
     match super::selector(&selector, scheme_file.as_ref()) {
         Some(s) => {
             fs::copy(tilde(s).as_ref(), tmux_file.as_ref())?;
-            Command::new("tmux")
-                .arg("source-file")
-                .arg(tmux_file.as_ref())
-                .output()?;
+            Command::new("tmux").arg("source-file").arg(tmux_file.as_ref()).output()?;
 
             Ok(())
         }
