@@ -29,7 +29,7 @@ async fn reload_instances(instances: Vec<PathBuf>) -> anyhow::Result<()> {
         .map(|p| {
             spawn(async move {
                 let (nvim, j) = new_unix_socket(&p, Dummy::new()).await?;
-                nvim.command("lua require(\"style\").apply()").await?;
+                nvim.command("lua require(\"colors\").apply()").await?;
                 nvim.command("redraw!").await?;
                 nvim.command("redrawstatus!").await?;
                 nvim.command("redrawtabline").await?;
