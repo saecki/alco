@@ -1,5 +1,5 @@
 use async_std::task::spawn;
-use nvim_rs::create::async_std::new_unix_socket;
+use nvim_rs::create::async_std::new_path;
 use nvim_rs::rpc::handler::Dummy;
 
 use std::fs;
@@ -28,7 +28,7 @@ async fn reload_instances(instances: Vec<PathBuf>) -> anyhow::Result<()> {
         .into_iter()
         .map(|p| {
             spawn(async move {
-                let (nvim, j) = new_unix_socket(&p, Dummy::new()).await?;
+                let (nvim, j) = new_path(&p, Dummy::new()).await?;
                 nvim.command("lua require(\"colors\").apply()").await?;
                 nvim.command("redraw!").await?;
                 nvim.command("redrawstatus!").await?;
