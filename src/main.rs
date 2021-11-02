@@ -179,11 +179,11 @@ fn main() {
     if let Some(shell) = generate_completion {
         let mut stdout = std::io::stdout();
         match shell {
-            BASH => generate::<Bash, _>(&mut app, BIN_NAME, &mut stdout),
-            ELVISH => generate::<Elvish, _>(&mut app, BIN_NAME, &mut stdout),
-            FISH => generate::<Fish, _>(&mut app, BIN_NAME, &mut stdout),
-            ZSH => generate::<Zsh, _>(&mut app, BIN_NAME, &mut stdout),
-            PWRSH => generate::<PowerShell, _>(&mut app, BIN_NAME, &mut stdout),
+            BASH => generate(Bash, &mut app, BIN_NAME, &mut stdout),
+            ELVISH => generate(Elvish, &mut app, BIN_NAME, &mut stdout),
+            FISH => generate(Fish, &mut app, BIN_NAME, &mut stdout),
+            ZSH => generate(Zsh, &mut app, BIN_NAME, &mut stdout),
+            PWRSH => generate(PowerShell, &mut app, BIN_NAME, &mut stdout),
             _ => unreachable!(),
         }
 
