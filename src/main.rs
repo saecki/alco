@@ -24,6 +24,7 @@ struct TmuxOptions {
 
 struct NeovimOptions {
     reload: bool,
+    command: String,
 }
 
 struct DeltaOption {
@@ -99,6 +100,14 @@ fn main() {
                 .takes_value(false)
                 .conflicts_with("reload all")
                 .about("Also reload neovim by sourcing a configuration file"),
+        )
+        .arg(
+            Arg::new("neovim command")
+                .long("neovim-command")
+                .default_value(alco::DEFAULT_NEOVIM_COMMAND)
+                .value_name("command")
+                .value_hint(ValueHint::FilePath)
+                .about("The neovim command that will be executed to update the colorscheme"),
         )
         .arg(
             Arg::new("reload delta")
@@ -203,6 +212,7 @@ fn main() {
 
     let neovim = NeovimOptions {
         reload: app_m.is_present("reload neovim") | reload_all,
+        command: app_m.value_of("neovim command").unwrap().to_owned(),
     };
 
     let delta = DeltaOption {
@@ -254,7 +264,7 @@ fn apply(
             } else {
                 None
             };
-            let n = if neovim.reload { Some(spawn(reload_neovim())) } else { None };
+            let n = if neovim.reload { Some(spawn(reload_neovim(neovim.command))) } else { None };
             let d = if delta.reload {
                 Some(spawn(reload_delta(delta.file, delta.selector, scheme_file.to_owned())))
             } else {
@@ -299,7 +309,7 @@ fn toggle(
                 } else {
                     None
                 };
-                let n = if neovim.reload { Some(spawn(reload_neovim())) } else { None };
+                let n = if neovim.reload { Some(spawn(reload_neovim(neovim.command))) } else { None };
                 let d = if delta.reload {
                     Some(spawn(reload_delta(delta.file, delta.selector, scheme_file.clone())))
                 } else {
@@ -367,8 +377,8 @@ async fn reload_tmux(
     }
 }
 
-async fn reload_neovim() {
-    if let Err(e) = alco::reload_neovim().await {
+async fn reload_neovim(command: impl AsRef<str>) {
+    if let Err(e) = alco::reload_neovim(command).await {
         println!("Error reloading neovim colorscheme:\n{}", e);
     }
 }

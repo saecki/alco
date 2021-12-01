@@ -18,6 +18,7 @@ pub const DEFAULT_COLORSCHEME_DIR: &str = "~/.config/alacritty/colors/";
 pub const DEFAULT_TMUX_FILE: &str = "~/.config/tmux/colors/current.conf";
 pub const DEFAULT_TMUX_SELECTOR: &str = "~/.config/alco/tmux-selector.yml";
 pub const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/colors.vim";
+pub const DEFAULT_NEOVIM_COMMAND: &str = "lua require('colors').reload()";
 pub const DEFAULT_DELTA_FILE: &str = "~/.config/delta/colors/current.gitconfig";
 pub const DEFAULT_DELTA_SELECTOR: &str = "~/.config/alco/delta-selector.yml";
 pub const DEFAULT_CMUS_SELECTOR: &str = "~/.config/alco/cmus-selector.yml";
@@ -45,7 +46,7 @@ mod nvim {
     use anyhow::bail;
     use std::path::Path;
 
-    pub async fn reload_neovim() -> anyhow::Result<()> {
+    pub async fn reload_neovim(_: impl AsRef<str>) -> anyhow::Result<()> {
         bail!("alco was compiled without the neovim feature flag")
     }
 }

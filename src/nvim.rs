@@ -5,7 +5,8 @@ use nvim_rs::rpc::handler::Dummy;
 use std::fs;
 use std::path::PathBuf;
 
-pub async fn reload_neovim() -> anyhow::Result<()> {
+
+pub async fn reload_neovim(command: impl AsRef<str>) -> anyhow::Result<()> {
     let instances: Vec<_> = fs::read_dir("/tmp")?
         .into_iter()
         .filter_map(Result::ok)
@@ -18,18 +19,19 @@ pub async fn reload_neovim() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    reload_instances(instances).await?;
+    reload_instances(instances, command.as_ref()).await?;
 
     Ok(())
 }
 
-async fn reload_instances(instances: Vec<PathBuf>) -> anyhow::Result<()> {
+async fn reload_instances(instances: Vec<PathBuf>, command: &str) -> anyhow::Result<()> {
     let tasks = instances
         .into_iter()
         .map(|p| {
+            let c = command.to_owned();
             spawn(async move {
                 let (nvim, j) = new_path(&p, Dummy::new()).await?;
-                nvim.command("lua require(\"colors\").setup()").await?;
+                nvim.command(&c).await?;
                 nvim.command("redraw!").await?;
                 nvim.command("redrawstatus!").await?;
                 nvim.command("redrawtabline").await?;
