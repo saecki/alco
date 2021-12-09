@@ -56,7 +56,7 @@ fn main() {
         .bin_name(BIN_NAME)
         .version(crate_version!())
         .author(crate_authors!())
-        .about("Update the colorscheme of alacritty.")
+        .about("Update the terminal colorschemes on the fly.")
         .arg(
             Arg::new("configuration file")
                 .long("config-file")
