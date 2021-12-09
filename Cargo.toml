@@ -5,7 +5,8 @@ authors = ["Saecki <tobiasschmitz2001@gmail.com>"]
 edition = "2018"
 
 [features]
-default = ["kitty", "tmux", "neovim", "delta", "cmus"]
+default = ["alacritty", "kitty", "tmux", "neovim", "delta", "cmus"]
+alacritty = []
 kitty = []
 tmux = []
 neovim = ["nvim-rs"]

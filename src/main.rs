@@ -16,6 +16,12 @@ const FISH: &str = "fish";
 const PWRSH: &str = "powershell";
 const ZSH: &str = "zsh";
 
+struct AlacrittyOptions {
+    reload: bool,
+    selector: String,
+    file: String,
+}
+
 struct KittyOptions {
     reload: bool,
     selector: String,
@@ -58,16 +64,16 @@ fn main() {
                 .default_value(alco::DEFAULT_CONFIG_FILE)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
-                .help("Alacritty's configuration file in which values are replaced"),
+                .help("Alco's configuration file"),
         )
         .arg(
-            Arg::new("colorscheme directory")
-                .long("colorscheme-dir")
+            Arg::new("colorscheme file")
+                .long("colorscheme-file")
                 .short('C')
-                .default_value(alco::DEFAULT_COLORSCHEME_DIR)
-                .value_name("directory")
-                .value_hint(ValueHint::DirPath)
-                .help("The direcotry that contains colorscheme configurations"),
+                .default_value(alco::DEFAULT_COLORSCHEME_FILE)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The file that contains a list of colorschemes"),
         )
         .arg(
             Arg::new("reload all")
@@ -75,6 +81,30 @@ fn main() {
                 .short('a')
                 .takes_value(false)
                 .help("Reload all additional colorschemes"),
+        )
+        .arg(
+            Arg::new("reload alacritty")
+                .long("reload-alacritty")
+                .short('k')
+                .takes_value(false)
+                .conflicts_with("reload all")
+                .help("Also reload alacritty updating the configuration file"),
+        )
+        .arg(
+            Arg::new("alacritty file")
+                .long("alacritty-file")
+                .default_value(alco::DEFAULT_ALACRITTY_FILE)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The alacritty configuration file which will updated"),
+        )
+        .arg(
+            Arg::new("alacritty selector")
+                .long("alacritty-selector")
+                .default_value(alco::DEFAULT_ALACRITTY_SELECTOR)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The alacritty selector file which contains a colorscheme mapping"),
         )
         .arg(
             Arg::new("reload kitty")
@@ -200,7 +230,7 @@ fn main() {
             App::new("apply")
                 .bin_name("alco-apply")
                 .about("Apply a colorscheme")
-                .arg(Arg::new("colorscheme").index(1).value_name("schemefile").required(true)),
+                .arg(Arg::new("colorscheme").index(1).value_name("colorscheme").required(true)),
             App::new("toggle")
                 .bin_name("alco-toggle")
                 .about("Toggle the colorscheme between available options")
@@ -239,9 +269,15 @@ fn main() {
     }
 
     let config_file = tilde(app_m.value_of("configuration file").unwrap()).into_owned();
-    let scheme_dir = tilde(app_m.value_of("colorscheme directory").unwrap()).into_owned();
+    let colors_file = tilde(app_m.value_of("colorscheme file").unwrap()).into_owned();
 
     let reload_all = app_m.is_present("reload all");
+
+    let alacritty = AlacrittyOptions {
+        reload: app_m.is_present("reload alacritty") | reload_all,
+        file: tilde(app_m.value_of("alacritty file").unwrap()).into_owned(),
+        selector: tilde(app_m.value_of("alacritty selector").unwrap()).into_owned(),
+    };
 
     let kitty = KittyOptions {
         reload: app_m.is_present("reload kitty") | reload_all,
@@ -274,17 +310,17 @@ fn main() {
 
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {
-            let scheme_file = sub_m.value_of("colorscheme").unwrap();
-            apply(config_file, scheme_dir, scheme_file, kitty, tmux, neovim, delta, cmus);
+            let colorscheme = sub_m.value_of("colorscheme").unwrap().to_owned();
+            apply(colors_file, config_file, &colorscheme, alacritty, kitty, tmux, neovim, delta, cmus);
         }
         Some(("toggle", sub_m)) => {
             let reverse = sub_m.is_present("reverse");
-            toggle(config_file, scheme_dir, reverse, kitty, tmux, neovim, delta, cmus);
+            toggle(colors_file, config_file, reverse, alacritty, kitty, tmux, neovim, delta, cmus);
         }
-        Some(("list", _)) => list(scheme_dir),
+        Some(("list", _)) => list(colors_file),
         Some(("status", sub_m)) => {
             let time = sub_m.is_present("time");
-            status(scheme_dir, time);
+            status(config_file, time);
         }
         _ => {
             app.print_help().ok();
@@ -293,41 +329,50 @@ fn main() {
 }
 
 fn apply(
+    colors_file: impl AsRef<Path>,
     config_file: impl AsRef<Path>,
-    scheme_dir: impl AsRef<Path>,
-    scheme_file: &str,
+    colorscheme: &str,
+    alacritty: AlacrittyOptions,
     kitty: KittyOptions,
     tmux: TmuxOptions,
     neovim: NeovimOptions,
     delta: DeltaOption,
     cmus: CmusOptions,
 ) {
-    if let Err(e) = alco::apply(config_file, scheme_dir, scheme_file) {
-        println!("Error applying colorscheme {}:\n{:?}", scheme_file, e);
+    if let Err(e) = alco::apply(colors_file, config_file, colorscheme.to_owned()) {
+        println!("Error applying colorscheme {}:\n{:?}", colorscheme, e);
     } else {
         block_on(async move {
+            let a = if alacritty.reload {
+                Some(spawn(reload_alacritty(alacritty.file, alacritty.selector, colorscheme.to_owned())))
+            } else {
+                None
+            };
             let k = if kitty.reload {
-                Some(spawn(reload_kitty(kitty.file, kitty.selector, kitty.socket, scheme_file.to_owned())))
+                Some(spawn(reload_kitty(kitty.file, kitty.selector, kitty.socket, colorscheme.to_owned())))
             } else {
                 None
             };
             let t = if tmux.reload {
-                Some(spawn(reload_tmux(tmux.file, tmux.selector, scheme_file.to_owned())))
+                Some(spawn(reload_tmux(tmux.file, tmux.selector, colorscheme.to_owned())))
             } else {
                 None
             };
             let n = if neovim.reload { Some(spawn(reload_neovim(neovim.command))) } else { None };
             let d = if delta.reload {
-                Some(spawn(reload_delta(delta.file, delta.selector, scheme_file.to_owned())))
+                Some(spawn(reload_delta(delta.file, delta.selector, colorscheme.to_owned())))
             } else {
                 None
             };
             let m = if cmus.reload {
-                Some(spawn(reload_cmus(cmus.selector, scheme_file.to_owned())))
+                Some(spawn(reload_cmus(cmus.selector, colorscheme.to_owned())))
             } else {
                 None
             };
 
+            if let Some(a) = a {
+                a.await;
+            }
             if let Some(k) = k {
                 k.await;
             }
@@ -350,6 +395,7 @@ fn toggle(
     config_file: impl AsRef<Path>,
     scheme_dir: impl AsRef<Path>,
     reverse: bool,
+    alacritty: AlacrittyOptions,
     kitty: KittyOptions,
     tmux: TmuxOptions,
     neovim: NeovimOptions,
@@ -360,6 +406,11 @@ fn toggle(
         Ok(scheme_file) => {
             println!("{}", scheme_file);
             block_on(async move {
+                let a = if alacritty.reload {
+                    Some(spawn(reload_alacritty(alacritty.file, alacritty.selector, scheme_file.to_owned())))
+                } else {
+                    None
+                };
                 let k = if kitty.reload {
                     Some(spawn(reload_kitty(kitty.file, kitty.selector, kitty.socket, scheme_file.clone())))
                 } else {
@@ -382,6 +433,9 @@ fn toggle(
                     None
                 };
 
+                if let Some(a) = a {
+                    a.await;
+                }
                 if let Some(k) = k {
                     k.await;
                 }
@@ -422,12 +476,22 @@ fn status(scheme_dir: impl AsRef<Path>, time: bool) {
         Ok(s) => {
             if time {
                 let seconds = Duration::from_secs(s.duration.as_secs());
-                println!("{} changed {} ago", s.file_name, humantime::format_duration(seconds),);
+                println!("{} changed {} ago", s.current, humantime::format_duration(seconds),);
             } else {
-                println!("{}", s.file_name);
+                println!("{}", s.current);
             }
         }
         Err(e) => println!("Error getting current colorscheme:\n{}", e),
+    }
+}
+
+async fn reload_alacritty(
+    alacritty_file: impl AsRef<Path>,
+    selector: impl AsRef<Path>,
+    scheme_file: impl AsRef<str>,
+) {
+    if let Err(e) = alco::reload_alacritty(alacritty_file, selector, scheme_file) {
+        println!("Error reloading alacritty colorscheme:\n{}", e);
     }
 }
 

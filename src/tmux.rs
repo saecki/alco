@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::{anyhow, bail};
 use shellexpand::tilde;
 use yaml_rust::YamlLoader;
 
@@ -11,7 +11,8 @@ pub fn reload_tmux(
     selector: impl AsRef<Path>,
     scheme_file: impl AsRef<str>,
 ) -> anyhow::Result<()> {
-    let selector_str = fs::read_to_string(selector.as_ref())?;
+    let selector_str = fs::read_to_string(selector.as_ref())
+        .map_err(|_| anyhow!("Error reading tmux selector"))?;
     let selector = YamlLoader::load_from_str(&selector_str)?.remove(0);
 
     match super::selector(&selector, scheme_file.as_ref()) {
@@ -21,6 +22,6 @@ pub fn reload_tmux(
 
             Ok(())
         }
-        None => bail!("Error parsing selector.yml"),
+        None => bail!("Missing mapping in tmux selector"),
     }
 }
