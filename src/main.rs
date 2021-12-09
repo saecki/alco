@@ -242,7 +242,7 @@ fn main() {
     let scheme_dir = tilde(app_m.value_of("colorscheme directory").unwrap()).into_owned();
 
     let reload_all = app_m.is_present("reload all");
-    
+
     let kitty = KittyOptions {
         reload: app_m.is_present("reload kitty") | reload_all,
         file: tilde(app_m.value_of("kitty file").unwrap()).into_owned(),
