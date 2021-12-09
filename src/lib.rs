@@ -8,6 +8,7 @@ use std::path::Path;
 use std::time::{Duration, SystemTime};
 use std::{fs, io};
 
+pub use kitty::reload_kitty;
 pub use cmus::reload_cmus;
 pub use delta::reload_delta;
 pub use nvim::reload_neovim;
@@ -15,6 +16,9 @@ pub use tmux::reload_tmux;
 
 pub const DEFAULT_CONFIG_FILE: &str = "~/.config/alacritty/alacritty.yml";
 pub const DEFAULT_COLORSCHEME_DIR: &str = "~/.config/alacritty/colors/";
+pub const DEFAULT_KITTY_FILE: &str = "~/.config/kitty/colors/current.conf";
+pub const DEFAULT_KITTY_SELECTOR: &str = "~/.config/alco/kitty-selector.yml";
+pub const DEFAULT_KITTY_SOCKET: &str = "/tmp/kitty";
 pub const DEFAULT_TMUX_FILE: &str = "~/.config/tmux/colors/current.conf";
 pub const DEFAULT_TMUX_SELECTOR: &str = "~/.config/alco/tmux-selector.yml";
 pub const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/colors.vim";
@@ -22,6 +26,23 @@ pub const DEFAULT_NEOVIM_COMMAND: &str = "lua require('colors').reload()";
 pub const DEFAULT_DELTA_FILE: &str = "~/.config/delta/colors/current.gitconfig";
 pub const DEFAULT_DELTA_SELECTOR: &str = "~/.config/alco/delta-selector.yml";
 pub const DEFAULT_CMUS_SELECTOR: &str = "~/.config/alco/cmus-selector.yml";
+
+#[cfg(feature = "kitty")]
+mod kitty;
+#[cfg(not(feature = "kitty"))]
+mod kitty {
+    use anyhow::bail;
+    use std::path::Path;
+
+    pub fn reload_kitty(
+        _: impl AsRef<Path>,
+        _: impl AsRef<Path>,
+        _: impl AsRef<Path>,
+        _: impl AsRef<str>,
+    ) -> anyhow::Result<()> {
+        bail!("alco was compiled without the kitty feature flag")
+    }
+}
 
 #[cfg(feature = "tmux")]
 mod tmux;

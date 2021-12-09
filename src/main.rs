@@ -16,6 +16,13 @@ const FISH: &str = "fish";
 const PWRSH: &str = "powershell";
 const ZSH: &str = "zsh";
 
+struct KittyOptions {
+    reload: bool,
+    selector: String,
+    file: String,
+    socket: String,
+}
+
 struct TmuxOptions {
     reload: bool,
     selector: String,
@@ -51,7 +58,7 @@ fn main() {
                 .default_value(alco::DEFAULT_CONFIG_FILE)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
-                .about("Alacritty's configuration file in which values are replaced"),
+                .help("Alacritty's configuration file in which values are replaced"),
         )
         .arg(
             Arg::new("colorscheme directory")
@@ -60,14 +67,46 @@ fn main() {
                 .default_value(alco::DEFAULT_COLORSCHEME_DIR)
                 .value_name("directory")
                 .value_hint(ValueHint::DirPath)
-                .about("The direcotry that contains colorscheme configurations"),
+                .help("The direcotry that contains colorscheme configurations"),
         )
         .arg(
             Arg::new("reload all")
                 .long("reload-all")
                 .short('a')
                 .takes_value(false)
-                .about("Reload all additional colorschemes"),
+                .help("Reload all additional colorschemes"),
+        )
+        .arg(
+            Arg::new("reload kitty")
+                .long("reload-kitty")
+                .short('k')
+                .takes_value(false)
+                .conflicts_with("reload all")
+                .help("Also reload kitty by sourcing a configuration file"),
+        )
+        .arg(
+            Arg::new("kitty file")
+                .long("kitty-file")
+                .default_value(alco::DEFAULT_KITTY_FILE)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The kitty configuration file which will be overwritten and sourced"),
+        )
+        .arg(
+            Arg::new("kitty selector")
+                .long("kitty-selector")
+                .default_value(alco::DEFAULT_KITTY_SELECTOR)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The kitty selector file which contains a colorscheme mapping"),
+        )
+        .arg(
+            Arg::new("kitty socket")
+                .long("kitty-socket")
+                .default_value(alco::DEFAULT_KITTY_SOCKET)
+                .value_name("socket")
+                .value_hint(ValueHint::FilePath)
+                .help("The unix socket on which kitty is listening for remote control"),
         )
         .arg(
             Arg::new("reload tmux")
@@ -75,7 +114,7 @@ fn main() {
                 .short('t')
                 .takes_value(false)
                 .conflicts_with("reload all")
-                .about("Also reload tmux by sourcing a configuration file"),
+                .help("Also reload tmux by sourcing a configuration file"),
         )
         .arg(
             Arg::new("tmux file")
@@ -83,7 +122,7 @@ fn main() {
                 .default_value(alco::DEFAULT_TMUX_FILE)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
-                .about("The tmux configuration file which will be overwritten and sourced"),
+                .help("The tmux configuration file which will be overwritten and sourced"),
         )
         .arg(
             Arg::new("tmux selector")
@@ -91,7 +130,7 @@ fn main() {
                 .default_value(alco::DEFAULT_TMUX_SELECTOR)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
-                .about("The tmux selector file which contains a coloscheme mapping"),
+                .help("The tmux selector file which contains a colorscheme mapping"),
         )
         .arg(
             Arg::new("reload neovim")
@@ -99,7 +138,7 @@ fn main() {
                 .short('n')
                 .takes_value(false)
                 .conflicts_with("reload all")
-                .about("Also reload neovim by sourcing a configuration file"),
+                .help("Also reload neovim by sourcing a configuration file"),
         )
         .arg(
             Arg::new("neovim command")
@@ -107,7 +146,7 @@ fn main() {
                 .default_value(alco::DEFAULT_NEOVIM_COMMAND)
                 .value_name("command")
                 .value_hint(ValueHint::FilePath)
-                .about("The neovim command that will be executed to update the colorscheme"),
+                .help("The neovim command that will be executed to update the colorscheme"),
         )
         .arg(
             Arg::new("reload delta")
@@ -115,7 +154,7 @@ fn main() {
                 .short('d')
                 .takes_value(false)
                 .conflicts_with("reload all")
-                .about("Also reload delta by updating the configuration file"),
+                .help("Also reload delta by updating the configuration file"),
         )
         .arg(
             Arg::new("delta file")
@@ -123,7 +162,7 @@ fn main() {
                 .default_value(alco::DEFAULT_DELTA_FILE)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
-                .about("The delta configuration file which will be overwritten"),
+                .help("The delta configuration file which will be overwritten"),
         )
         .arg(
             Arg::new("delta selector")
@@ -131,7 +170,7 @@ fn main() {
                 .default_value(alco::DEFAULT_DELTA_SELECTOR)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
-                .about("The delta selector file which contains a coloscheme mapping"),
+                .help("The delta selector file which contains a colorscheme mapping"),
         )
         .arg(
             Arg::new("reload cmus")
@@ -139,7 +178,7 @@ fn main() {
                 .short('m')
                 .takes_value(false)
                 .conflicts_with("reload all")
-                .about("Also reload cmus by sourcing a configuration file"),
+                .help("Also reload cmus by sourcing a configuration file"),
         )
         .arg(
             Arg::new("cmus selector")
@@ -147,7 +186,7 @@ fn main() {
                 .default_value(alco::DEFAULT_CMUS_SELECTOR)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
-                .about("The cmus selector file which contains a coloscheme mapping"),
+                .help("The cmus selector file which contains a colorscheme mapping"),
         )
         .arg(
             Arg::new("generate completion")
@@ -155,7 +194,7 @@ fn main() {
                 .short('g')
                 .value_name("shell")
                 .possible_values(&[BASH, ZSH, FISH, ELVISH, PWRSH])
-                .about("Generates a completion script for the specified shell"),
+                .help("Generates a completion script for the specified shell"),
         )
         .subcommands(vec![
             App::new("apply")
@@ -170,7 +209,7 @@ fn main() {
                         .long("reverse")
                         .short('r')
                         .takes_value(false)
-                        .about("Toggle in reverse order between available colorschemes"),
+                        .help("Toggle in reverse order between available colorschemes"),
                 ),
             App::new("list").bin_name("alco-list").about("List available colorschemes"),
             App::new("status").bin_name("alco-status").about("Print the current status").arg(
@@ -178,7 +217,7 @@ fn main() {
                     .long("time")
                     .short('t')
                     .takes_value(false)
-                    .about("Print the duration since the last change"),
+                    .help("Print the duration since the last change"),
             ),
         ]);
 
@@ -203,6 +242,13 @@ fn main() {
     let scheme_dir = tilde(app_m.value_of("colorscheme directory").unwrap()).into_owned();
 
     let reload_all = app_m.is_present("reload all");
+    
+    let kitty = KittyOptions {
+        reload: app_m.is_present("reload kitty") | reload_all,
+        file: tilde(app_m.value_of("kitty file").unwrap()).into_owned(),
+        socket: tilde(app_m.value_of("kitty socket").unwrap()).into_owned(),
+        selector: tilde(app_m.value_of("kitty selector").unwrap()).into_owned(),
+    };
 
     let tmux = TmuxOptions {
         reload: app_m.is_present("reload tmux") | reload_all,
@@ -229,11 +275,11 @@ fn main() {
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {
             let scheme_file = sub_m.value_of("colorscheme").unwrap();
-            apply(config_file, scheme_dir, scheme_file, tmux, neovim, delta, cmus);
+            apply(config_file, scheme_dir, scheme_file, kitty, tmux, neovim, delta, cmus);
         }
         Some(("toggle", sub_m)) => {
             let reverse = sub_m.is_present("reverse");
-            toggle(config_file, scheme_dir, reverse, tmux, neovim, delta, cmus);
+            toggle(config_file, scheme_dir, reverse, kitty, tmux, neovim, delta, cmus);
         }
         Some(("list", _)) => list(scheme_dir),
         Some(("status", sub_m)) => {
@@ -250,6 +296,7 @@ fn apply(
     config_file: impl AsRef<Path>,
     scheme_dir: impl AsRef<Path>,
     scheme_file: &str,
+    kitty: KittyOptions,
     tmux: TmuxOptions,
     neovim: NeovimOptions,
     delta: DeltaOption,
@@ -259,6 +306,11 @@ fn apply(
         println!("Error applying colorscheme {}:\n{:?}", scheme_file, e);
     } else {
         block_on(async move {
+            let k = if kitty.reload {
+                Some(spawn(reload_kitty(kitty.file, kitty.selector, kitty.socket, scheme_file.to_owned())))
+            } else {
+                None
+            };
             let t = if tmux.reload {
                 Some(spawn(reload_tmux(tmux.file, tmux.selector, scheme_file.to_owned())))
             } else {
@@ -276,6 +328,9 @@ fn apply(
                 None
             };
 
+            if let Some(k) = k {
+                k.await;
+            }
             if let Some(t) = t {
                 t.await;
             }
@@ -295,6 +350,7 @@ fn toggle(
     config_file: impl AsRef<Path>,
     scheme_dir: impl AsRef<Path>,
     reverse: bool,
+    kitty: KittyOptions,
     tmux: TmuxOptions,
     neovim: NeovimOptions,
     delta: DeltaOption,
@@ -304,6 +360,11 @@ fn toggle(
         Ok(scheme_file) => {
             println!("{}", scheme_file);
             block_on(async move {
+                let k = if kitty.reload {
+                    Some(spawn(reload_kitty(kitty.file, kitty.selector, kitty.socket, scheme_file.clone())))
+                } else {
+                    None
+                };
                 let t = if tmux.reload {
                     Some(spawn(reload_tmux(tmux.file, tmux.selector, scheme_file.clone())))
                 } else {
@@ -321,6 +382,9 @@ fn toggle(
                     None
                 };
 
+                if let Some(k) = k {
+                    k.await;
+                }
                 if let Some(t) = t {
                     t.await;
                 }
@@ -364,6 +428,17 @@ fn status(scheme_dir: impl AsRef<Path>, time: bool) {
             }
         }
         Err(e) => println!("Error getting current colorscheme:\n{}", e),
+    }
+}
+
+async fn reload_kitty(
+    kitty_file: impl AsRef<Path>,
+    selector: impl AsRef<Path>,
+    socket_file: impl AsRef<Path>,
+    scheme_file: impl AsRef<str>,
+) {
+    if let Err(e) = alco::reload_kitty(kitty_file, selector, socket_file, scheme_file) {
+        println!("Error reloading kitty colorscheme:\n{}", e);
     }
 }
 
