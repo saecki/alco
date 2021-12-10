@@ -20,14 +20,16 @@ pub fn reload_kitty(
         Some(s) => {
             fs::copy(tilde(s).as_ref(), kitty_file.as_ref())?;
             let unix_socket = format!("unix:{}", socket_file.as_ref().display());
-            Command::new("kitty")
-                .arg("@")
-                .arg("--to")
-                .arg(&unix_socket)
-                .arg("set-colors")
-                .arg("-a")
-                .arg(kitty_file.as_ref())
-                .output()?;
+            if Path::exists(socket_file.as_ref()) {
+                Command::new("kitty")
+                    .arg("@")
+                    .arg("--to")
+                    .arg(&unix_socket)
+                    .arg("set-colors")
+                    .arg("-a")
+                    .arg(kitty_file.as_ref())
+                    .output()?;
+            }
 
             Ok(())
         }
