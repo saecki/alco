@@ -19,8 +19,8 @@ pub fn reload_kitty(
     match super::selector(&selector, scheme_file.as_ref()) {
         Some(s) => {
             fs::copy(tilde(s).as_ref(), kitty_file.as_ref())?;
-            let unix_socket = format!("unix:{}", socket_file.as_ref().display());
             if Path::exists(socket_file.as_ref()) {
+                let unix_socket = format!("unix:{}", socket_file.as_ref().display());
                 Command::new("kitty")
                     .arg("@")
                     .arg("--to")
