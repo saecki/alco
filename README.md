@@ -115,3 +115,7 @@ my-dark-theme: "~/.config/tmux/colors/my-dark-theme.conf"
 my-light-theme: "~/.config/tmux/colors/my-light-theme.conf"
 else: "~/.config/tmux/colors/my-dark-theme.conf" # default to a dark theme
 ```
+
+
+### TODO
+- consider using .in file for alacritty config
