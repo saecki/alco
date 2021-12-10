@@ -24,28 +24,28 @@ impl<T: FnMut(Event, Marker)> MarkedEventReceiver for ColorEventReceiver<T> {
 }
 
 pub fn reload_alacritty(
-    alacritty_file: impl AsRef<Path>,
+    config_file: impl AsRef<Path>,
     selector: impl AsRef<Path>,
-    scheme_file: impl AsRef<str>,
+    colorscheme: impl AsRef<str>,
 ) -> anyhow::Result<()> {
     let selector_str = fs::read_to_string(selector.as_ref())
         .map_err(|_| anyhow!("Error reading alacritty selector"))?;
     let selector = YamlLoader::load_from_str(&selector_str)?.remove(0);
 
-    match super::selector(&selector, scheme_file.as_ref()) {
+    match super::selector(&selector, colorscheme.as_ref()) {
         Some(s) => {
-            apply(alacritty_file, tilde(s).as_ref())?;
+            apply(config_file, tilde(s).as_ref())?;
             Ok(())
         }
         None => bail!("Missing mapping in alacritty selector"),
     }
 }
 
-fn apply(alacritty_file: impl AsRef<Path>, scheme_file: impl AsRef<str>) -> anyhow::Result<()> {
+fn apply(config_file: impl AsRef<Path>, scheme_file: impl AsRef<str>) -> anyhow::Result<()> {
     let new_colors = parse_colors(scheme_file.as_ref())
         .map_err(|_| anyhow!("Error reading alacritty colorscheme file"))?;
 
-    let config_str = fs::read_to_string(alacritty_file.as_ref())?;
+    let config_str = fs::read_to_string(config_file.as_ref())?;
     let config_lines = config_str.lines().collect::<Vec<_>>();
     let mut new_config_str = String::new();
     let mut line_index = 0;
@@ -97,7 +97,7 @@ fn apply(alacritty_file: impl AsRef<Path>, scheme_file: impl AsRef<str>) -> anyh
         new_config_str.push('\n');
     }
 
-    fs::write(alacritty_file, new_config_str)?;
+    fs::write(config_file, new_config_str)?;
 
     Ok(())
 }

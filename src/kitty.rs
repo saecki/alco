@@ -8,18 +8,18 @@ use std::path::Path;
 use std::process::Command;
 
 pub fn reload_kitty(
-    kitty_file: impl AsRef<Path>,
-    selector: impl AsRef<Path>,
+    config_file: impl AsRef<Path>,
     socket_file: impl AsRef<Path>,
-    scheme_file: impl AsRef<str>,
+    selector: impl AsRef<Path>,
+    colorscheme: impl AsRef<str>,
 ) -> anyhow::Result<()> {
     let selector_str = fs::read_to_string(selector.as_ref())
         .map_err(|_| anyhow!("Error reading kitty selector"))?;
     let selector = YamlLoader::load_from_str(&selector_str)?.remove(0);
 
-    match super::selector(&selector, scheme_file.as_ref()) {
+    match super::selector(&selector, colorscheme.as_ref()) {
         Some(s) => {
-            fs::copy(tilde(s).as_ref(), kitty_file.as_ref())?;
+            fs::copy(tilde(s).as_ref(), config_file.as_ref())?;
 
             let socket_file = socket_file.as_ref();
             if Path::exists(socket_file) {

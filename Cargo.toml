@@ -5,11 +5,12 @@ authors = ["Saecki <tobiasschmitz2001@gmail.com>"]
 edition = "2018"
 
 [features]
-default = ["alacritty", "kitty", "tmux", "neovim", "delta", "cmus"]
+default = ["alacritty", "kitty", "tmux", "neovim", "starship", "delta", "cmus"]
 alacritty = []
 kitty = ["unix-cred"]
 tmux = []
 neovim = ["nvim-rs"]
+starship = []
 delta = []
 cmus = []
 

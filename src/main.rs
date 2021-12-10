@@ -18,21 +18,21 @@ const ZSH: &str = "zsh";
 
 struct AlacrittyOptions {
     reload: bool,
-    selector: String,
     file: String,
+    selector: String,
 }
 
 struct KittyOptions {
     reload: bool,
-    selector: String,
     file: String,
     socket: String,
+    selector: String,
 }
 
 struct TmuxOptions {
     reload: bool,
-    selector: String,
     file: String,
+    selector: String,
 }
 
 struct NeovimOptions {
@@ -40,10 +40,17 @@ struct NeovimOptions {
     command: String,
 }
 
-struct DeltaOption {
+struct StarshipOptions {
     reload: bool,
-    selector: String,
     file: String,
+    in_file: String,
+    selector: String,
+}
+
+struct DeltaOptions {
+    reload: bool,
+    file: String,
+    selector: String,
 }
 
 struct CmusOptions {
@@ -179,6 +186,38 @@ fn main() {
                 .help("The neovim command that will be executed to update the colorscheme"),
         )
         .arg(
+            Arg::new("reload starship")
+                .long("reload-starship")
+                .short('d')
+                .takes_value(false)
+                .conflicts_with("reload all")
+                .help("Also reload starship by updating the configuration file"),
+        )
+        .arg(
+            Arg::new("starship file")
+                .long("starship-file")
+                .default_value(alco::DEFAULT_STARSHIP_FILE)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The starship configuration file which will be overwritten"),
+        )
+        .arg(
+            Arg::new("starship in file")
+                .long("starship-in-file")
+                .default_value(alco::DEFAULT_STARSHIP_IN_FILE)
+                .value_name("in-file")
+                .value_hint(ValueHint::FilePath)
+                .help("The starship in file which will be read"),
+        )
+        .arg(
+            Arg::new("starship selector")
+                .long("starship-selector")
+                .default_value(alco::DEFAULT_STARSHIP_SELECTOR)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The starship selector file which contains a colorscheme mapping"),
+        )
+        .arg(
             Arg::new("reload delta")
                 .long("reload-delta")
                 .short('d')
@@ -296,8 +335,15 @@ fn main() {
         reload: app_m.is_present("reload neovim") | reload_all,
         command: app_m.value_of("neovim command").unwrap().to_owned(),
     };
+    
+    let starship = StarshipOptions {
+        reload: app_m.is_present("reload starship") | reload_all,
+        file: tilde(app_m.value_of("starship file").unwrap()).into_owned(),
+        in_file: tilde(app_m.value_of("starship in file").unwrap()).into_owned(),
+        selector: tilde(app_m.value_of("starship selector").unwrap()).into_owned(),
+    };
 
-    let delta = DeltaOption {
+    let delta = DeltaOptions {
         reload: app_m.is_present("reload delta") | reload_all,
         file: tilde(app_m.value_of("delta file").unwrap()).into_owned(),
         selector: tilde(app_m.value_of("delta selector").unwrap()).into_owned(),
@@ -311,11 +357,11 @@ fn main() {
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {
             let colorscheme = sub_m.value_of("colorscheme").unwrap().to_owned();
-            apply(colors_file, config_file, &colorscheme, alacritty, kitty, tmux, neovim, delta, cmus);
+            apply(colors_file, config_file, &colorscheme, alacritty, kitty, tmux, neovim, starship,delta, cmus);
         }
         Some(("toggle", sub_m)) => {
             let reverse = sub_m.is_present("reverse");
-            toggle(colors_file, config_file, reverse, alacritty, kitty, tmux, neovim, delta, cmus);
+            toggle(colors_file, config_file, reverse, alacritty, kitty, tmux, neovim, starship, delta, cmus);
         }
         Some(("list", _)) => list(colors_file),
         Some(("status", sub_m)) => {
@@ -336,7 +382,8 @@ fn apply(
     kitty: KittyOptions,
     tmux: TmuxOptions,
     neovim: NeovimOptions,
-    delta: DeltaOption,
+    starship: StarshipOptions,
+    delta: DeltaOptions,
     cmus: CmusOptions,
 ) {
     if let Err(e) = alco::apply(colors_file, config_file, colorscheme.to_owned()) {
@@ -349,7 +396,7 @@ fn apply(
                 None
             };
             let k = if kitty.reload {
-                Some(spawn(reload_kitty(kitty.file, kitty.selector, kitty.socket, colorscheme.to_owned())))
+                Some(spawn(reload_kitty(kitty.file, kitty.socket, kitty.selector, colorscheme.to_owned())))
             } else {
                 None
             };
@@ -359,6 +406,11 @@ fn apply(
                 None
             };
             let n = if neovim.reload { Some(spawn(reload_neovim(neovim.command))) } else { None };
+            let s = if starship.reload {
+                Some(spawn(reload_starship(starship.file, starship.in_file, starship.selector, colorscheme.to_owned())))
+            } else {
+                None
+            };
             let d = if delta.reload {
                 Some(spawn(reload_delta(delta.file, delta.selector, colorscheme.to_owned())))
             } else {
@@ -382,6 +434,9 @@ fn apply(
             if let Some(n) = n {
                 n.await;
             }
+            if let Some(s) = s {
+                s.await;
+            }
             if let Some(d) = d {
                 d.await;
             }
@@ -399,36 +454,42 @@ fn toggle(
     kitty: KittyOptions,
     tmux: TmuxOptions,
     neovim: NeovimOptions,
-    delta: DeltaOption,
+    starship: StarshipOptions,
+    delta: DeltaOptions,
     cmus: CmusOptions,
 ) {
     match alco::toggle(config_file, scheme_dir, reverse) {
-        Ok(scheme_file) => {
-            println!("{}", scheme_file);
+        Ok(colorscheme) => {
+            println!("{}", colorscheme);
             block_on(async move {
                 let a = if alacritty.reload {
-                    Some(spawn(reload_alacritty(alacritty.file, alacritty.selector, scheme_file.to_owned())))
+                    Some(spawn(reload_alacritty(alacritty.file, alacritty.selector, colorscheme.to_owned())))
                 } else {
                     None
                 };
                 let k = if kitty.reload {
-                    Some(spawn(reload_kitty(kitty.file, kitty.selector, kitty.socket, scheme_file.clone())))
+                    Some(spawn(reload_kitty(kitty.file, kitty.selector, kitty.socket, colorscheme.clone())))
                 } else {
                     None
                 };
                 let t = if tmux.reload {
-                    Some(spawn(reload_tmux(tmux.file, tmux.selector, scheme_file.clone())))
+                    Some(spawn(reload_tmux(tmux.file, tmux.selector, colorscheme.clone())))
                 } else {
                     None
                 };
                 let n = if neovim.reload { Some(spawn(reload_neovim(neovim.command))) } else { None };
+                let s = if starship.reload {
+                    Some(spawn(reload_starship(starship.file, starship.in_file, starship.selector, colorscheme.to_owned())))
+                } else {
+                    None
+                };
                 let d = if delta.reload {
-                    Some(spawn(reload_delta(delta.file, delta.selector, scheme_file.clone())))
+                    Some(spawn(reload_delta(delta.file, delta.selector, colorscheme.clone())))
                 } else {
                     None
                 };
                 let m = if cmus.reload {
-                    Some(spawn(reload_cmus(cmus.selector, scheme_file)))
+                    Some(spawn(reload_cmus(cmus.selector, colorscheme)))
                 } else {
                     None
                 };
@@ -441,6 +502,9 @@ fn toggle(
                 }
                 if let Some(t) = t {
                     t.await;
+                }
+                if let Some(s) = s {
+                    s.await;
                 }
                 if let Some(d) = d {
                     d.await;
@@ -486,32 +550,32 @@ fn status(scheme_dir: impl AsRef<Path>, time: bool) {
 }
 
 async fn reload_alacritty(
-    alacritty_file: impl AsRef<Path>,
+    config_file: impl AsRef<Path>,
     selector: impl AsRef<Path>,
-    scheme_file: impl AsRef<str>,
+    colorscheme: impl AsRef<str>,
 ) {
-    if let Err(e) = alco::reload_alacritty(alacritty_file, selector, scheme_file) {
+    if let Err(e) = alco::reload_alacritty(config_file, selector, colorscheme) {
         println!("Error reloading alacritty colorscheme:\n{}", e);
     }
 }
 
 async fn reload_kitty(
-    kitty_file: impl AsRef<Path>,
+    config_file: impl AsRef<Path>,
     selector: impl AsRef<Path>,
     socket_file: impl AsRef<Path>,
-    scheme_file: impl AsRef<str>,
+    colorscheme: impl AsRef<str>,
 ) {
-    if let Err(e) = alco::reload_kitty(kitty_file, selector, socket_file, scheme_file) {
+    if let Err(e) = alco::reload_kitty(config_file, selector, socket_file, colorscheme) {
         println!("Error reloading kitty colorscheme:\n{}", e);
     }
 }
 
 async fn reload_tmux(
-    tmux_file: impl AsRef<Path>,
+    config_file: impl AsRef<Path>,
     selector: impl AsRef<Path>,
-    scheme_file: impl AsRef<str>,
+    colorscheme: impl AsRef<str>,
 ) {
-    if let Err(e) = alco::reload_tmux(tmux_file, selector, scheme_file) {
+    if let Err(e) = alco::reload_tmux(config_file, selector, colorscheme) {
         println!("Error reloading tmux colorscheme:\n{}", e);
     }
 }
@@ -522,18 +586,29 @@ async fn reload_neovim(command: impl AsRef<str>) {
     }
 }
 
-async fn reload_delta(
-    delta_file: impl AsRef<Path>,
+async fn reload_starship(
+    config_file: impl AsRef<Path>,
+    in_file: impl AsRef<Path>,
     selector: impl AsRef<Path>,
-    scheme_file: impl AsRef<str>,
+    colorscheme: impl AsRef<str>,
 ) {
-    if let Err(e) = alco::reload_delta(delta_file, selector, scheme_file) {
+    if let Err(e) = alco::reload_starship(config_file, in_file, selector, colorscheme) {
+        println!("Error reloading starship colorscheme:\n{}", e);
+    }
+}
+
+async fn reload_delta(
+    config_file: impl AsRef<Path>,
+    selector: impl AsRef<Path>,
+    colorscheme: impl AsRef<str>,
+) {
+    if let Err(e) = alco::reload_delta(config_file, selector, colorscheme) {
         println!("Error reloading delta colorscheme:\n{}", e);
     }
 }
 
-async fn reload_cmus(selector: impl AsRef<Path>, scheme_file: impl AsRef<str>) {
-    if let Err(e) = alco::reload_cmus(selector, scheme_file) {
+async fn reload_cmus(selector: impl AsRef<Path>, colorscheme: impl AsRef<str>) {
+    if let Err(e) = alco::reload_cmus(selector, colorscheme) {
         println!("Error reloading cmus colorscheme:\n{}", e);
     }
 }

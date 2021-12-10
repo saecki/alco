@@ -11,6 +11,7 @@ pub use alacritty::reload_alacritty;
 pub use kitty::reload_kitty;
 pub use cmus::reload_cmus;
 pub use delta::reload_delta;
+pub use starship::reload_starship;
 pub use nvim::reload_neovim;
 pub use tmux::reload_tmux;
 
@@ -29,6 +30,10 @@ pub const DEFAULT_TMUX_SELECTOR: &str = "~/.config/alco/tmux-selector.yml";
 
 pub const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/colors.vim";
 pub const DEFAULT_NEOVIM_COMMAND: &str = "lua require('colors').reload()";
+
+pub const DEFAULT_STARSHIP_FILE: &str = "~/.config/starship.toml";
+pub const DEFAULT_STARSHIP_IN_FILE: &str = "~/.config/starship/starship.toml.in";
+pub const DEFAULT_STARSHIP_SELECTOR: &str = "~/.config/alco/starship-selector.yml";
 
 pub const DEFAULT_DELTA_FILE: &str = "~/.config/delta/colors/current.gitconfig";
 pub const DEFAULT_DELTA_SELECTOR: &str = "~/.config/alco/delta-selector.yml";
@@ -93,6 +98,23 @@ mod nvim {
 
     pub async fn reload_neovim(_: impl AsRef<str>) -> anyhow::Result<()> {
         bail!("alco was compiled without the neovim feature flag")
+    }
+}
+
+#[cfg(feature = "starship")]
+mod starship;
+#[cfg(not(feature = "starship"))]
+mod starship {
+    use anyhow::bail;
+    use std::path::Path;
+
+    pub fn reload_starship(
+        _: impl AsRef<Path>,
+        _: impl AsRef<Path>,
+        _: impl AsRef<Path>,
+        _: impl AsRef<str>,
+    ) -> anyhow::Result<()> {
+        bail!("alco was compiled without the starship feature flag")
     }
 }
 
