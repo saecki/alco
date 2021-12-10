@@ -5,7 +5,6 @@ use nvim_rs::rpc::handler::Dummy;
 use std::fs;
 use std::path::PathBuf;
 
-
 pub async fn reload_neovim(command: impl AsRef<str>) -> anyhow::Result<()> {
     let instances: Vec<_> = fs::read_dir("/tmp")?
         .into_iter()

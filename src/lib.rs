@@ -1,18 +1,17 @@
-use anyhow::{bail, anyhow};
+use anyhow::{anyhow, bail};
 use serde::{Deserialize, Serialize};
 use yaml_rust::Yaml;
 
-
+use std::fs;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
-use std::fs;
 
 pub use alacritty::reload_alacritty;
-pub use kitty::reload_kitty;
 pub use cmus::reload_cmus;
 pub use delta::reload_delta;
-pub use starship::reload_starship;
+pub use kitty::reload_kitty;
 pub use nvim::reload_neovim;
+pub use starship::reload_starship;
 pub use tmux::reload_tmux;
 
 pub const DEFAULT_COLORSCHEME_FILE: &str = "~/.config/alco/colors.yml";
@@ -230,7 +229,7 @@ pub fn toggle(
 }
 
 pub fn list(colors_file: impl AsRef<Path>) -> anyhow::Result<Vec<String>> {
-    parse_colors(colors_file) .map(|c| c.colors)
+    parse_colors(colors_file).map(|c| c.colors)
 }
 
 pub fn status(config_file: impl AsRef<Path>) -> anyhow::Result<Status> {
@@ -238,10 +237,7 @@ pub fn status(config_file: impl AsRef<Path>) -> anyhow::Result<Status> {
     Ok(Status::from(config))
 }
 
-fn write_config(
-    config_file: impl AsRef<Path>,
-    config: &Config,
-) -> anyhow::Result<()> {
+fn write_config(config_file: impl AsRef<Path>, config: &Config) -> anyhow::Result<()> {
     let config_str = serde_yaml::to_string(config)?;
     fs::write(config_file, config_str)?;
     Ok(())
