@@ -3,6 +3,7 @@ use shellexpand::tilde;
 use yaml_rust::YamlLoader;
 
 use std::fs;
+use std::os::unix::net::UnixStream;
 use std::path::Path;
 use std::process::Command;
 
@@ -19,16 +20,14 @@ pub fn reload_kitty(
     match super::selector(&selector, scheme_file.as_ref()) {
         Some(s) => {
             fs::copy(tilde(s).as_ref(), kitty_file.as_ref())?;
-            if Path::exists(socket_file.as_ref()) {
-                let unix_socket = format!("unix:{}", socket_file.as_ref().display());
-                Command::new("kitty")
-                    .arg("@")
-                    .arg("--to")
-                    .arg(&unix_socket)
-                    .arg("set-colors")
-                    .arg("-a")
-                    .arg(kitty_file.as_ref())
-                    .output()?;
+
+            let socket_file = socket_file.as_ref();
+            if Path::exists(socket_file) {
+                let unix_stream = UnixStream::connect(socket_file)?;
+                let (pid, _, _) = unix_cred::get_peer_pid_ids(&unix_stream)?;
+                if let Some(pid) = pid {
+                    Command::new("kill").arg("-s").arg("USR1").arg(pid.to_string()).output()?;
+                }
             }
 
             Ok(())

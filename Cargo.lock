@@ -15,6 +15,7 @@ dependencies = [
  "serde",
  "serde_yaml",
  "shellexpand",
+ "unix-cred",
  "yaml-rust",
 ]
 
@@ -814,6 +815,15 @@ name = "unicode-xid"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
+
+[[package]]
+name = "unix-cred"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af5216b35da67cb53691a8c4f922f6ee0ad1b58d046d6bd81e85ac7696a62ef6"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "value-bag"

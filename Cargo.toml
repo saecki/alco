@@ -7,7 +7,7 @@ edition = "2018"
 [features]
 default = ["alacritty", "kitty", "tmux", "neovim", "delta", "cmus"]
 alacritty = []
-kitty = []
+kitty = ["unix-cred"]
 tmux = []
 neovim = ["nvim-rs"]
 delta = []
@@ -25,3 +25,4 @@ shellexpand = "2.1.0"
 yaml-rust = "0.4.5"
 
 nvim-rs = { version = "0.3.1", features = ["use_async-std"], optional = true }
+unix-cred = { version = "0.1.1", optional = true }
