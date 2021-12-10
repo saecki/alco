@@ -2,7 +2,7 @@
 
 ### Usage
 ```
-alco 0.1.0
+alco 0.2.0
 
 Saecki <tobiasschmitz2001@gmail.com>
 
