@@ -19,6 +19,7 @@ const ZSH: &str = "zsh";
 struct AlacrittyOptions {
     reload: bool,
     file: String,
+    in_file: String,
     selector: String,
 }
 
@@ -92,7 +93,7 @@ fn main() {
         .arg(
             Arg::new("reload alacritty")
                 .long("reload-alacritty")
-                .short('k')
+                .short('A')
                 .takes_value(false)
                 .conflicts_with("reload all")
                 .help("Also reload alacritty updating the configuration file"),
@@ -101,6 +102,14 @@ fn main() {
             Arg::new("alacritty file")
                 .long("alacritty-file")
                 .default_value(alco::DEFAULT_ALACRITTY_FILE)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The alacritty configuration file which will updated"),
+        )
+        .arg(
+            Arg::new("alacritty in file")
+                .long("alacritty-in-file")
+                .default_value(alco::DEFAULT_ALACRITTY_IN_FILE)
                 .value_name("file")
                 .value_hint(ValueHint::FilePath)
                 .help("The alacritty configuration file which will updated"),
@@ -205,7 +214,7 @@ fn main() {
             Arg::new("starship in file")
                 .long("starship-in-file")
                 .default_value(alco::DEFAULT_STARSHIP_IN_FILE)
-                .value_name("in-file")
+                .value_name("file")
                 .value_hint(ValueHint::FilePath)
                 .help("The starship in file which will be read"),
         )
@@ -315,6 +324,7 @@ fn main() {
     let alacritty = AlacrittyOptions {
         reload: app_m.is_present("reload alacritty") | reload_all,
         file: tilde(app_m.value_of("alacritty file").unwrap()).into_owned(),
+        in_file: tilde(app_m.value_of("alacritty in file").unwrap()).into_owned(),
         selector: tilde(app_m.value_of("alacritty selector").unwrap()).into_owned(),
     };
 
@@ -391,7 +401,7 @@ fn apply(
     } else {
         block_on(async move {
             let a = if alacritty.reload {
-                Some(spawn(reload_alacritty(alacritty.file, alacritty.selector, colorscheme.to_owned())))
+                Some(spawn(reload_alacritty(alacritty.file, alacritty.in_file, alacritty.selector, colorscheme.to_owned())))
             } else {
                 None
             };
@@ -463,7 +473,7 @@ fn toggle(
             println!("{}", colorscheme);
             block_on(async move {
                 let a = if alacritty.reload {
-                    Some(spawn(reload_alacritty(alacritty.file, alacritty.selector, colorscheme.to_owned())))
+                    Some(spawn(reload_alacritty(alacritty.file, alacritty.in_file, alacritty.selector, colorscheme.to_owned())))
                 } else {
                     None
                 };
@@ -551,10 +561,11 @@ fn status(scheme_dir: impl AsRef<Path>, time: bool) {
 
 async fn reload_alacritty(
     config_file: impl AsRef<Path>,
+    in_file: impl AsRef<Path>,
     selector: impl AsRef<Path>,
     colorscheme: impl AsRef<str>,
 ) {
-    if let Err(e) = alco::reload_alacritty(config_file, selector, colorscheme) {
+    if let Err(e) = alco::reload_alacritty(config_file, in_file, selector, colorscheme) {
         println!("Error reloading alacritty colorscheme:\n{}", e);
     }
 }

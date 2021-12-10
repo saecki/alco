@@ -19,6 +19,7 @@ pub const DEFAULT_COLORSCHEME_FILE: &str = "~/.config/alco/colors.yml";
 pub const DEFAULT_CONFIG_FILE: &str = "~/.config/alco/alco.yml";
 
 pub const DEFAULT_ALACRITTY_FILE: &str = "~/.config/alacritty/alacritty.yml";
+pub const DEFAULT_ALACRITTY_IN_FILE: &str = "~/.config/alacritty/alacritty.yml.in";
 pub const DEFAULT_ALACRITTY_SELECTOR: &str = "~/.config/alco/alacritty-selector.yml";
 
 pub const DEFAULT_KITTY_FILE: &str = "~/.config/kitty/colors/current.conf";

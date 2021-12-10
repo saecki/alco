@@ -25,6 +25,7 @@ impl<T: FnMut(Event, Marker)> MarkedEventReceiver for ColorEventReceiver<T> {
 
 pub fn reload_alacritty(
     config_file: impl AsRef<Path>,
+    in_file: impl AsRef<Path>,
     selector: impl AsRef<Path>,
     colorscheme: impl AsRef<str>,
 ) -> anyhow::Result<()> {
@@ -34,27 +35,31 @@ pub fn reload_alacritty(
 
     match super::selector(&selector, colorscheme.as_ref()) {
         Some(s) => {
-            apply(config_file, tilde(s).as_ref())?;
+            apply(config_file, in_file, tilde(s).as_ref())?;
             Ok(())
         }
         None => bail!("Missing mapping in alacritty selector"),
     }
 }
 
-fn apply(config_file: impl AsRef<Path>, scheme_file: impl AsRef<str>) -> anyhow::Result<()> {
+fn apply(
+    config_file: impl AsRef<Path>,
+    in_file: impl AsRef<Path>,
+    scheme_file: impl AsRef<str>,
+) -> anyhow::Result<()> {
     let new_colors = parse_colors(scheme_file.as_ref())
         .map_err(|_| anyhow!("Error reading alacritty colorscheme file"))?;
 
-    let config_str = fs::read_to_string(config_file.as_ref())?;
-    let config_lines = config_str.lines().collect::<Vec<_>>();
-    let mut new_config_str = String::new();
+    let input_str = fs::read_to_string(in_file.as_ref())?;
+    let input_lines = input_str.lines().collect::<Vec<_>>();
+    let mut config_str = String::new();
     let mut line_index = 0;
 
     let mut current_path: Vec<String> = Vec::new();
     let mut last_line = 0;
     let mut last_col = 0;
 
-    let mut parser = Parser::new(config_str.chars());
+    let mut parser = Parser::new(input_str.chars());
     let mut receiver = ColorEventReceiver::new(|event, mark| {
         if let Event::Scalar(name, _, _, _) = event {
             if mark.line() != last_line {
@@ -79,12 +84,12 @@ fn apply(config_file: impl AsRef<Path>, scheme_file: impl AsRef<str>) -> anyhow:
             } else if let Some(v) = value(&new_colors, &current_path) {
                 if let Some(stringified) = stringify(v) {
                     for i in line_index..mark.line() - 1 {
-                        new_config_str.push_str(config_lines[i]);
-                        new_config_str.push('\n');
+                        config_str.push_str(input_lines[i]);
+                        config_str.push('\n');
                     }
-                    new_config_str.push_str(&config_lines[mark.line() - 1][0..mark.col()]);
-                    new_config_str.push_str(&stringified);
-                    new_config_str.push('\n');
+                    config_str.push_str(&input_lines[mark.line() - 1][0..mark.col()]);
+                    config_str.push_str(&stringified);
+                    config_str.push('\n');
                     line_index = mark.line();
                 }
             }
@@ -92,12 +97,12 @@ fn apply(config_file: impl AsRef<Path>, scheme_file: impl AsRef<str>) -> anyhow:
     });
     parser.load(&mut receiver, true)?;
 
-    for i in line_index..config_lines.len() {
-        new_config_str.push_str(config_lines[i]);
-        new_config_str.push('\n');
+    for i in line_index..input_lines.len() {
+        config_str.push_str(input_lines[i]);
+        config_str.push('\n');
     }
 
-    fs::write(config_file, new_config_str)?;
+    fs::write(config_file, config_str)?;
 
     Ok(())
 }
