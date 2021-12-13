@@ -8,7 +8,6 @@ use yaml_rust::YamlLoader;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 
 pub fn reload_starship(
     config_file: impl AsRef<Path>,
@@ -17,18 +16,16 @@ pub fn reload_starship(
     scheme_file: impl AsRef<str>,
 ) -> anyhow::Result<()> {
     let selector_str = fs::read_to_string(selector.as_ref())
-        .map_err(|_| anyhow!("Error reading cmus selector"))?;
+        .map_err(|_| anyhow!("Error reading starship selector"))?;
     let selector = YamlLoader::load_from_str(&selector_str)?.remove(0);
 
     match super::selector(&selector, scheme_file.as_ref()) {
         Some(s) => {
-            Command::new("cmus-remote").arg("-C").arg(&format!("colorscheme {}", s)).output()?;
-
             write_config(config_file, in_file, s)?;
 
             Ok(())
         }
-        None => bail!("Missing mapping in cmus selector"),
+        None => bail!("Missing mapping in starship selector"),
     }
 }
 
