@@ -1,7 +1,7 @@
 use async_std::task::{block_on, spawn};
 use clap::{crate_authors, crate_version, App, Arg, ValueHint};
-use clap_generate::generate;
-use clap_generate::generators::{Bash, Elvish, Fish, PowerShell, Zsh};
+use clap_complete::generate;
+use clap_complete::shells::{Bash, Elvish, Fish, PowerShell, Zsh};
 use shellexpand::tilde;
 
 use std::path::Path;

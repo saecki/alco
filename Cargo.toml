@@ -17,13 +17,13 @@ cmus = []
 [dependencies]
 anyhow = "1.0"
 async-std = "1.10"
-clap = { version = "=3.0.0-rc.3", features = ["cargo"] }
-clap_generate = "=3.0.0-rc.3"
+clap = { version = "3.0.0", features = ["cargo", "wrap_help"] }
+clap_complete = "3.0.0"
 humantime = "2.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
 shellexpand = "2.1.0"
 yaml-rust = "0.4.5"
 
-nvim-rs = { version = "0.3.1", features = ["use_async-std"], optional = true }
+nvim-rs = { version = "0.4.0", features = ["use_async-std"], optional = true }
 unix-cred = { version = "0.1.1", optional = true }
