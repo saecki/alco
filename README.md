@@ -3,9 +3,7 @@
 ### Usage
 ```
 alco 0.2.0
-
 Saecki <tobiasschmitz2001@gmail.com>
-
 Update the terminal colorschemes on the fly.
 
 USAGE:
@@ -15,23 +13,31 @@ OPTIONS:
     -a, --reload-all
             Reload all additional colorschemes
 
+    -A, --reload-alacritty
+            Also reload alacritty updating the configuration file
+
         --alacritty-file <file>
             The alacritty configuration file which will updated [default:
             ~/.config/alacritty/alacritty.yml]
 
+        --alacritty-in-file <file>
+            The alacritty configuration file which will updated [default:
+            ~/.config/alacritty/alacritty.yml.in]
+
         --alacritty-selector <file>
-            The alacritty selector file which contains a colorscheme mapping [default:
-            ~/.config/alco/alacritty-selector.yml]
+            The alacritty selector file which contains a colorscheme mapping
+            [default: ~/.config/alco/alacritty-selector.yml]
 
     -c, --config-file <file>
             Alco's configuration file [default: ~/.config/alco/alco.yml]
 
     -C, --colorscheme-file <file>
-            The file that contains a list of colorschemes [default: ~/.config/alco/colors.yml]
+            The file that contains a list of colorschemes [default:
+            ~/.config/alco/colors.yml]
 
         --cmus-selector <file>
-            The cmus selector file which contains a colorscheme mapping [default:
-            ~/.config/alco/cmus-selector.yml]
+            The cmus selector file which contains a colorscheme mapping
+            [default: ~/.config/alco/cmus-selector.yml]
 
     -d, --reload-delta
             Also reload delta by updating the configuration file
@@ -41,12 +47,12 @@ OPTIONS:
             ~/.config/delta/colors/current.gitconfig]
 
         --delta-selector <file>
-            The delta selector file which contains a colorscheme mapping [default:
-            ~/.config/alco/delta-selector.yml]
+            The delta selector file which contains a colorscheme mapping
+            [default: ~/.config/alco/delta-selector.yml]
 
     -g, --generate-completion <shell>
-            Generates a completion script for the specified shell [possible values: bash, zsh, fish,
-            elvish, powershell]
+            Generates a completion script for the specified shell [possible
+            values: bash, zsh, fish, elvish, powershell]
 
     -h, --help
             Print help information
@@ -55,15 +61,16 @@ OPTIONS:
             Also reload kitty by sourcing a configuration file
 
         --kitty-file <file>
-            The kitty configuration file which will be overwritten and sourced [default:
-            ~/.config/kitty/colors/current.conf]
+            The kitty configuration file which will be overwritten and sourced
+            [default: ~/.config/kitty/colors/current.conf]
 
         --kitty-selector <file>
-            The kitty selector file which contains a colorscheme mapping [default:
-            ~/.config/alco/kitty-selector.yml]
+            The kitty selector file which contains a colorscheme mapping
+            [default: ~/.config/alco/kitty-selector.yml]
 
         --kitty-socket <socket>
-            The unix socket on which kitty is listening for remote control [default: /tmp/kitty]
+            The unix socket on which kitty is listening for remote control
+            [default: /tmp/kitty]
 
     -m, --reload-cmus
             Also reload cmus by sourcing a configuration file
@@ -72,19 +79,31 @@ OPTIONS:
             Also reload neovim by sourcing a configuration file
 
         --neovim-command <command>
-            The neovim command that will be executed to update the colorscheme [default: "lua
-            require('colors').reload()"]
+            The neovim command that will be executed to update the colorscheme
+            [default: "lua require('colors').reload()"]
+
+        --starship-file <file>
+            The starship configuration file which will be overwritten [default:
+            ~/.config/starship.toml]
+
+        --starship-in-file <file>
+            The starship in file which will be read [default:
+            ~/.config/starship/starship.toml.in]
+
+        --starship-selector <file>
+            The starship selector file which contains a colorscheme mapping
+            [default: ~/.config/alco/starship-selector.yml]
 
     -t, --reload-tmux
             Also reload tmux by sourcing a configuration file
 
         --tmux-file <file>
-            The tmux configuration file which will be overwritten and sourced [default:
-            ~/.config/tmux/colors/current.conf]
+            The tmux configuration file which will be overwritten and sourced
+            [default: ~/.config/tmux/colors/current.conf]
 
         --tmux-selector <file>
-            The tmux selector file which contains a colorscheme mapping [default:
-            ~/.config/alco/tmux-selector.yml]
+            The tmux selector file which contains a colorscheme mapping
+            [default: ~/.config/alco/tmux-selector.yml]
 
     -V, --version
             Print version information
@@ -105,6 +124,7 @@ Selctor files contain a mapping from the alco colorscheme names to the respectiv
 | alacritty   | `path` |
 | kitty       | `path` |
 | tmux        | `path` |
+| starship    | `path` |
 | delta       | `path` |
 | cmus        | `name` |
 
@@ -115,7 +135,3 @@ my-dark-theme: "~/.config/tmux/colors/my-dark-theme.conf"
 my-light-theme: "~/.config/tmux/colors/my-light-theme.conf"
 else: "~/.config/tmux/colors/my-dark-theme.conf" # default to a dark theme
 ```
-
-
-### TODO
-- consider using .in file for alacritty config
