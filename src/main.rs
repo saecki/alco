@@ -1,5 +1,5 @@
 use async_std::task::{block_on, spawn};
-use clap::{crate_authors, crate_version, App, Arg, ValueHint};
+use clap::{crate_authors, crate_version, Command, Arg, ValueHint};
 use clap_complete::generate;
 use clap_complete::shells::{Bash, Elvish, Fish, PowerShell, Zsh};
 use shellexpand::tilde;
@@ -70,7 +70,7 @@ struct CmusOptions {
 }
 
 fn main() {
-    let mut app = App::new("alco")
+    let mut app = Command::new("alco")
         .bin_name(BIN_NAME)
         .version(crate_version!())
         .author(crate_authors!())
@@ -285,11 +285,11 @@ fn main() {
                 .help("Generates a completion script for the specified shell"),
         )
         .subcommands(vec![
-            App::new("apply")
+            Command::new("apply")
                 .bin_name("alco-apply")
                 .about("Apply a colorscheme")
                 .arg(Arg::new("colorscheme").index(1).value_name("colorscheme").required(true)),
-            App::new("toggle")
+            Command::new("toggle")
                 .bin_name("alco-toggle")
                 .about("Toggle the colorscheme between available options")
                 .arg(
@@ -299,8 +299,8 @@ fn main() {
                         .takes_value(false)
                         .help("Toggle in reverse order between available colorschemes"),
                 ),
-            App::new("list").bin_name("alco-list").about("List available colorschemes"),
-            App::new("status").bin_name("alco-status").about("Print the current status").arg(
+            Command::new("list").bin_name("alco-list").about("List available colorschemes"),
+            Command::new("status").bin_name("alco-status").about("Print the current status").arg(
                 Arg::new("time")
                     .long("time")
                     .short('t')
