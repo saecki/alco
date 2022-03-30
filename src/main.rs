@@ -1,5 +1,5 @@
 use async_std::task::{block_on, spawn};
-use clap::{crate_authors, crate_version, Command, Arg, ValueHint};
+use clap::{crate_authors, crate_version, Arg, Command, ValueHint};
 use clap_complete::generate;
 use clap_complete::shells::{Bash, Elvish, Fish, PowerShell, Zsh};
 use shellexpand::tilde;
@@ -74,7 +74,7 @@ fn main() {
         .bin_name(BIN_NAME)
         .version(crate_version!())
         .author(crate_authors!())
-        .about("Update the terminal colorschemes on the fly.")
+        .about("Update terminal colorschemes on the fly")
         .arg(
             Arg::new("configuration file")
                 .long("config-file")
