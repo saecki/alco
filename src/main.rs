@@ -207,7 +207,7 @@ fn main() {
         .arg(
             Arg::new("reload starship")
                 .long("reload-starship")
-                .short('d')
+                .short('s')
                 .takes_value(false)
                 .conflicts_with("reload all")
                 .help("Also reload starship by updating the configuration file"),
