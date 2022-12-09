@@ -16,14 +16,14 @@ cmus = []
 
 [dependencies]
 anyhow = "1.0"
-async-std = "1.11"
-clap = { version = "3.1.18", features = ["cargo", "wrap_help"] }
-clap_complete = "3.1.4"
+async-std = "1.12"
+clap = { version = "4.0.29", features = ["cargo", "wrap_help"] }
+clap_complete = "4.0.6"
 humantime = "2.1"
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.8"
-shellexpand = "2.1.0"
+serde_yaml = "0.9"
+shellexpand = "3.0.0"
 yaml-rust = "0.4.5"
 
-nvim-rs = { version = "0.4.0", features = ["use_async-std"], optional = true }
+nvim-rs = { version = "0.5.0", features = ["use_async-std"], optional = true }
 unix-cred = { version = "0.1.1", optional = true }

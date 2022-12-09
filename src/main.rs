@@ -1,11 +1,12 @@
 use async_std::task::{block_on, spawn};
-use clap::{crate_authors, crate_version, Arg, Command, ValueHint};
+use clap::{crate_authors, crate_version, value_parser, Arg, Command, ValueHint, ColorChoice};
 use clap_complete::generate;
 use clap_complete::shells::{Bash, Elvish, Fish, PowerShell, Zsh};
 use shellexpand::tilde;
 
 use std::path::Path;
 use std::process::exit;
+use std::str::FromStr;
 use std::time::Duration;
 
 const BIN_NAME: &str = "alco";
@@ -15,6 +16,30 @@ const ELVISH: &str = "elvish";
 const FISH: &str = "fish";
 const PWRSH: &str = "powershell";
 const ZSH: &str = "zsh";
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Shell {
+    Bash,
+    Elvish,
+    Fish,
+    Pwrsh,
+    Zsh,
+}
+
+impl FromStr for Shell {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            BASH => Ok(Shell::Bash),
+            ELVISH => Ok(Shell::Elvish),
+            FISH => Ok(Shell::Fish),
+            PWRSH => Ok(Shell::Pwrsh),
+            ZSH => Ok(Shell::Zsh),
+            _ => Err("Unknown shell"),
+        }
+    }
+}
 
 struct Options {
     alacritty: AlacrittyOptions,
@@ -71,6 +96,7 @@ struct CmusOptions {
 
 fn main() {
     let mut app = Command::new("alco")
+        .color(ColorChoice::Auto)
         .bin_name(BIN_NAME)
         .version(crate_version!())
         .author(crate_authors!())
@@ -97,14 +123,14 @@ fn main() {
             Arg::new("reload all")
                 .long("reload-all")
                 .short('a')
-                .takes_value(false)
+                .num_args(0)
                 .help("Reload all additional colorschemes"),
         )
         .arg(
             Arg::new("reload alacritty")
                 .long("reload-alacritty")
                 .short('A')
-                .takes_value(false)
+                .num_args(0)
                 .conflicts_with("reload all")
                 .help("Also reload alacritty updating the configuration file"),
         )
@@ -136,7 +162,7 @@ fn main() {
             Arg::new("reload kitty")
                 .long("reload-kitty")
                 .short('k')
-                .takes_value(false)
+                .num_args(0)
                 .conflicts_with("reload all")
                 .help("Also reload kitty by sourcing a configuration file"),
         )
@@ -168,7 +194,7 @@ fn main() {
             Arg::new("reload tmux")
                 .long("reload-tmux")
                 .short('t')
-                .takes_value(false)
+                .num_args(0)
                 .conflicts_with("reload all")
                 .help("Also reload tmux by sourcing a configuration file"),
         )
@@ -192,7 +218,7 @@ fn main() {
             Arg::new("reload neovim")
                 .long("reload-neovim")
                 .short('n')
-                .takes_value(false)
+                .num_args(0)
                 .conflicts_with("reload all")
                 .help("Also reload neovim by sourcing a configuration file"),
         )
@@ -208,7 +234,7 @@ fn main() {
             Arg::new("reload starship")
                 .long("reload-starship")
                 .short('s')
-                .takes_value(false)
+                .num_args(0)
                 .conflicts_with("reload all")
                 .help("Also reload starship by updating the configuration file"),
         )
@@ -240,7 +266,7 @@ fn main() {
             Arg::new("reload delta")
                 .long("reload-delta")
                 .short('d')
-                .takes_value(false)
+                .num_args(0)
                 .conflicts_with("reload all")
                 .help("Also reload delta by updating the configuration file"),
         )
@@ -264,7 +290,7 @@ fn main() {
             Arg::new("reload cmus")
                 .long("reload-cmus")
                 .short('m')
-                .takes_value(false)
+                .num_args(0)
                 .conflicts_with("reload all")
                 .help("Also reload cmus by sourcing a configuration file"),
         )
@@ -281,7 +307,7 @@ fn main() {
                 .long("generate-completion")
                 .short('g')
                 .value_name("shell")
-                .possible_values(&[BASH, ZSH, FISH, ELVISH, PWRSH])
+                .value_parser(value_parser!(Shell))
                 .help("Generates a completion script for the specified shell"),
         )
         .subcommands(vec![
@@ -296,7 +322,7 @@ fn main() {
                     Arg::new("reverse")
                         .long("reverse")
                         .short('r')
-                        .takes_value(false)
+                        .num_args(0)
                         .help("Toggle in reverse order between available colorschemes"),
                 ),
             Command::new("list").bin_name("alco-list").about("List available colorschemes"),
@@ -304,67 +330,66 @@ fn main() {
                 Arg::new("time")
                     .long("time")
                     .short('t')
-                    .takes_value(false)
+                    .num_args(0)
                     .help("Print the duration since the last change"),
             ),
         ]);
 
     let app_m = app.clone().get_matches();
 
-    let generate_completion = app_m.value_of("generate completion");
+    let generate_completion = app_m.get_one("generate completion");
     if let Some(shell) = generate_completion {
         let mut stdout = std::io::stdout();
         match shell {
-            BASH => generate(Bash, &mut app, BIN_NAME, &mut stdout),
-            ELVISH => generate(Elvish, &mut app, BIN_NAME, &mut stdout),
-            FISH => generate(Fish, &mut app, BIN_NAME, &mut stdout),
-            ZSH => generate(Zsh, &mut app, BIN_NAME, &mut stdout),
-            PWRSH => generate(PowerShell, &mut app, BIN_NAME, &mut stdout),
-            _ => unreachable!(),
+            Shell::Bash => generate(Bash, &mut app, BIN_NAME, &mut stdout),
+            Shell::Elvish => generate(Elvish, &mut app, BIN_NAME, &mut stdout),
+            Shell::Fish => generate(Fish, &mut app, BIN_NAME, &mut stdout),
+            Shell::Zsh => generate(Zsh, &mut app, BIN_NAME, &mut stdout),
+            Shell::Pwrsh => generate(PowerShell, &mut app, BIN_NAME, &mut stdout),
         }
 
         exit(0);
     }
 
-    let colors_file = tilde(app_m.value_of("colorscheme file").unwrap()).into_owned();
-    let config_file = tilde(app_m.value_of("configuration file").unwrap()).into_owned();
-    let reload_all = app_m.is_present("reload all");
+    let colors_file = tilde(app_m.get_one::<String>("colorscheme file").unwrap()).into_owned();
+    let config_file = tilde(app_m.get_one::<String>("configuration file").unwrap()).into_owned();
+    let reload_all = app_m.get_flag("reload all");
 
     let alacritty = AlacrittyOptions {
-        reload: app_m.is_present("reload alacritty") | reload_all,
-        file: tilde(app_m.value_of("alacritty file").unwrap()).into_owned(),
-        in_file: tilde(app_m.value_of("alacritty in file").unwrap()).into_owned(),
-        selector: tilde(app_m.value_of("alacritty selector").unwrap()).into_owned(),
+        reload: app_m.get_flag("reload alacritty") | reload_all,
+        file: tilde(app_m.get_one::<String>("alacritty file").unwrap()).into_owned(),
+        in_file: tilde(app_m.get_one::<String>("alacritty in file").unwrap()).into_owned(),
+        selector: tilde(app_m.get_one::<String>("alacritty selector").unwrap()).into_owned(),
     };
     let kitty = KittyOptions {
-        reload: app_m.is_present("reload kitty") | reload_all,
-        file: tilde(app_m.value_of("kitty file").unwrap()).into_owned(),
-        socket: tilde(app_m.value_of("kitty socket").unwrap()).into_owned(),
-        selector: tilde(app_m.value_of("kitty selector").unwrap()).into_owned(),
+        reload: app_m.get_flag("reload kitty") | reload_all,
+        file: tilde(app_m.get_one::<String>("kitty file").unwrap()).into_owned(),
+        socket: tilde(app_m.get_one::<String>("kitty socket").unwrap()).into_owned(),
+        selector: tilde(app_m.get_one::<String>("kitty selector").unwrap()).into_owned(),
     };
     let tmux = TmuxOptions {
-        reload: app_m.is_present("reload tmux") | reload_all,
-        file: tilde(app_m.value_of("tmux file").unwrap()).into_owned(),
-        selector: tilde(app_m.value_of("tmux selector").unwrap()).into_owned(),
+        reload: app_m.get_flag("reload tmux") | reload_all,
+        file: tilde(app_m.get_one::<String>("tmux file").unwrap()).into_owned(),
+        selector: tilde(app_m.get_one::<String>("tmux selector").unwrap()).into_owned(),
     };
     let neovim = NeovimOptions {
-        reload: app_m.is_present("reload neovim") | reload_all,
-        command: app_m.value_of("neovim command").unwrap().to_owned(),
+        reload: app_m.get_flag("reload neovim") | reload_all,
+        command: app_m.get_one::<String>("neovim command").unwrap().to_owned(),
     };
     let starship = StarshipOptions {
-        reload: app_m.is_present("reload starship") | reload_all,
-        file: tilde(app_m.value_of("starship file").unwrap()).into_owned(),
-        in_file: tilde(app_m.value_of("starship in file").unwrap()).into_owned(),
-        selector: tilde(app_m.value_of("starship selector").unwrap()).into_owned(),
+        reload: app_m.get_flag("reload starship") | reload_all,
+        file: tilde(app_m.get_one::<String>("starship file").unwrap()).into_owned(),
+        in_file: tilde(app_m.get_one::<String>("starship in file").unwrap()).into_owned(),
+        selector: tilde(app_m.get_one::<String>("starship selector").unwrap()).into_owned(),
     };
     let delta = DeltaOptions {
-        reload: app_m.is_present("reload delta") | reload_all,
-        file: tilde(app_m.value_of("delta file").unwrap()).into_owned(),
-        selector: tilde(app_m.value_of("delta selector").unwrap()).into_owned(),
+        reload: app_m.get_flag("reload delta") | reload_all,
+        file: tilde(app_m.get_one::<String>("delta file").unwrap()).into_owned(),
+        selector: tilde(app_m.get_one::<String>("delta selector").unwrap()).into_owned(),
     };
     let cmus = CmusOptions {
-        reload: app_m.is_present("reload cmus") | reload_all,
-        selector: tilde(app_m.value_of("cmus selector").unwrap()).into_owned(),
+        reload: app_m.get_flag("reload cmus") | reload_all,
+        selector: tilde(app_m.get_one::<String>("cmus selector").unwrap()).into_owned(),
     };
 
     let opts = Options {
@@ -379,16 +404,16 @@ fn main() {
 
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {
-            let colorscheme = sub_m.value_of("colorscheme").unwrap().to_owned();
+            let colorscheme = sub_m.get_one::<String>("colorscheme").unwrap();
             apply(colors_file, config_file, &colorscheme, opts);
         }
         Some(("toggle", sub_m)) => {
-            let reverse = sub_m.is_present("reverse");
+            let reverse = sub_m.get_flag("reverse");
             toggle(colors_file, config_file, reverse, opts);
         }
         Some(("list", _)) => list(colors_file),
         Some(("status", sub_m)) => {
-            let time = sub_m.is_present("time");
+            let time = sub_m.get_flag("time");
             status(config_file, time);
         }
         _ => {
@@ -425,58 +450,58 @@ fn toggle(
 
 fn apply_colorscheme(colorscheme: &str, opts: Options) {
     block_on(async move {
-        let a = if opts.alacritty.reload {
+        let alacritty = if opts.alacritty.reload {
             Some(spawn(reload_alacritty(opts.alacritty, colorscheme.to_owned())))
         } else {
             None
         };
-        let k = if opts.kitty.reload {
+        let kitty = if opts.kitty.reload {
             Some(spawn(reload_kitty(opts.kitty, colorscheme.to_owned())))
         } else {
             None
         };
-        let t = if opts.tmux.reload {
+        let tmux = if opts.tmux.reload {
             Some(spawn(reload_tmux(opts.tmux, colorscheme.to_owned())))
         } else {
             None
         };
-        let n =
+        let neovim =
             if opts.neovim.reload { Some(spawn(reload_neovim(opts.neovim.command))) } else { None };
         let s = if opts.starship.reload {
             Some(spawn(reload_starship(opts.starship, colorscheme.to_owned())))
         } else {
             None
         };
-        let d = if opts.delta.reload {
+        let delta = if opts.delta.reload {
             Some(spawn(reload_delta(opts.delta, colorscheme.to_owned())))
         } else {
             None
         };
-        let m = if opts.cmus.reload {
+        let cmus = if opts.cmus.reload {
             Some(spawn(reload_cmus(opts.cmus, colorscheme.to_owned())))
         } else {
             None
         };
 
-        if let Some(a) = a {
+        if let Some(a) = alacritty {
             a.await;
         }
-        if let Some(k) = k {
+        if let Some(k) = kitty {
             k.await;
         }
-        if let Some(t) = t {
+        if let Some(t) = tmux {
             t.await;
         }
-        if let Some(n) = n {
+        if let Some(n) = neovim {
             n.await;
         }
         if let Some(s) = s {
             s.await;
         }
-        if let Some(d) = d {
+        if let Some(d) = delta {
             d.await;
         }
-        if let Some(m) = m {
+        if let Some(m) = cmus {
             m.await;
         }
     });
