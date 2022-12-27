@@ -83,8 +83,8 @@ fn apply(
                 }
             } else if let Some(v) = value(&new_colors, &current_path) {
                 if let Some(stringified) = stringify(v) {
-                    for i in line_index..mark.line() - 1 {
-                        config_str.push_str(input_lines[i]);
+                    for line in input_lines.iter().take(mark.line() - 1).skip(line_index) {
+                        config_str.push_str(line);
                         config_str.push('\n');
                     }
                     config_str.push_str(&input_lines[mark.line() - 1][0..mark.col()]);
@@ -97,8 +97,8 @@ fn apply(
     });
     parser.load(&mut receiver, true)?;
 
-    for i in line_index..input_lines.len() {
-        config_str.push_str(input_lines[i]);
+    for line in input_lines.iter().skip(line_index) {
+        config_str.push_str(line);
         config_str.push('\n');
     }
 
