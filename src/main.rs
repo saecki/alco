@@ -1,5 +1,5 @@
 use async_std::task::{block_on, spawn};
-use clap::{crate_authors, crate_version, value_parser, Arg, Command, ValueHint, ColorChoice};
+use clap::{crate_authors, crate_version, value_parser, Arg, ColorChoice, Command, ValueHint};
 use clap_complete::generate;
 use clap_complete::shells::{Bash, Elvish, Fish, PowerShell, Zsh};
 use shellexpand::tilde;
@@ -10,12 +10,6 @@ use std::str::FromStr;
 use std::time::Duration;
 
 const BIN_NAME: &str = "alco";
-
-const BASH: &str = "bash";
-const ELVISH: &str = "elvish";
-const FISH: &str = "fish";
-const PWRSH: &str = "powershell";
-const ZSH: &str = "zsh";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Shell {
@@ -31,11 +25,11 @@ impl FromStr for Shell {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            BASH => Ok(Shell::Bash),
-            ELVISH => Ok(Shell::Elvish),
-            FISH => Ok(Shell::Fish),
-            PWRSH => Ok(Shell::Pwrsh),
-            ZSH => Ok(Shell::Zsh),
+            "bash" => Ok(Shell::Bash),
+            "elvish" => Ok(Shell::Elvish),
+            "fish" => Ok(Shell::Fish),
+            "powershell" => Ok(Shell::Pwrsh),
+            "zsh" => Ok(Shell::Zsh),
             _ => Err("Unknown shell"),
         }
     }
@@ -95,7 +89,7 @@ struct CmusOptions {
 }
 
 fn main() {
-    let mut app = Command::new("alco")
+    let mut app = Command::new(BIN_NAME)
         .color(ColorChoice::Auto)
         .bin_name(BIN_NAME)
         .version(crate_version!())
@@ -405,7 +399,7 @@ fn main() {
     match app_m.subcommand() {
         Some(("apply", sub_m)) => {
             let colorscheme = sub_m.get_one::<String>("colorscheme").unwrap();
-            apply(colors_file, config_file, &colorscheme, opts);
+            apply(colors_file, config_file, colorscheme, opts);
         }
         Some(("toggle", sub_m)) => {
             let reverse = sub_m.get_flag("reverse");
