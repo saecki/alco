@@ -8,14 +8,11 @@ use std::path::PathBuf;
 pub async fn reload_neovim(command: impl AsRef<str>) -> anyhow::Result<()> {
     let instances: Vec<_> = fs::read_dir("/run/user/1000")?
         .into_iter()
-        .map(|s| {dbg!(&s); s})
         .filter_map(Result::ok)
         .filter(|d| d.metadata().map(|m| !m.is_dir()).unwrap_or(false))
         .filter(|d| d.file_name().to_str().map(|s| s.starts_with("nvim")).unwrap_or(false))
         .map(|d| d.path())
         .collect();
-
-    dbg!(&instances);
 
     if instances.is_empty() {
         return Ok(());
