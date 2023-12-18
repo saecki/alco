@@ -1,9 +1,9 @@
-use async_std::task::{block_on, spawn};
 use clap::{crate_authors, crate_version, value_parser, Arg, ColorChoice, Command, ValueHint};
 use clap_complete::generate;
 use clap_complete::shells::{Bash, Elvish, Fish, PowerShell, Zsh};
 use shellexpand::tilde;
 
+use std::future::Future;
 use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
@@ -443,62 +443,35 @@ fn toggle(
 }
 
 fn apply_colorscheme(colorscheme: &str, opts: Options) {
-    block_on(async move {
-        let alacritty = if opts.alacritty.reload {
-            Some(spawn(reload_alacritty(opts.alacritty, colorscheme.to_owned())))
-        } else {
-            None
-        };
-        let kitty = if opts.kitty.reload {
-            Some(spawn(reload_kitty(opts.kitty, colorscheme.to_owned())))
-        } else {
-            None
-        };
-        let tmux = if opts.tmux.reload {
-            Some(spawn(reload_tmux(opts.tmux, colorscheme.to_owned())))
-        } else {
-            None
-        };
-        let neovim =
-            if opts.neovim.reload { Some(spawn(reload_neovim(opts.neovim.command))) } else { None };
-        let s = if opts.starship.reload {
-            Some(spawn(reload_starship(opts.starship, colorscheme.to_owned())))
-        } else {
-            None
-        };
-        let delta = if opts.delta.reload {
-            Some(spawn(reload_delta(opts.delta, colorscheme.to_owned())))
-        } else {
-            None
-        };
-        let cmus = if opts.cmus.reload {
-            Some(spawn(reload_cmus(opts.cmus, colorscheme.to_owned())))
-        } else {
-            None
-        };
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(8)
+        .enable_io()
+        .build()
+        .expect("tokio runtime failed to start");
 
-        if let Some(a) = alacritty {
-            a.await;
-        }
-        if let Some(k) = kitty {
-            k.await;
-        }
-        if let Some(t) = tmux {
-            t.await;
-        }
-        if let Some(n) = neovim {
-            n.await;
-        }
-        if let Some(s) = s {
-            s.await;
-        }
-        if let Some(d) = delta {
-            d.await;
-        }
-        if let Some(m) = cmus {
-            m.await;
-        }
+    runtime.block_on(async move {
+        #[rustfmt::skip]
+        tokio::join!(
+            spawn_if(opts.alacritty.reload, reload_alacritty(opts.alacritty, colorscheme.to_owned())),
+            spawn_if(opts.kitty.reload, reload_kitty(opts.kitty, colorscheme.to_owned())),
+            spawn_if(opts.tmux.reload, reload_tmux(opts.tmux, colorscheme.to_owned())),
+            spawn_if(opts.neovim.reload, reload_neovim(opts.neovim.command)),
+            spawn_if(opts.starship.reload, reload_starship(opts.starship, colorscheme.to_owned())),
+            spawn_if(opts.delta.reload, reload_delta(opts.delta, colorscheme.to_owned())),
+            spawn_if(opts.cmus.reload, reload_cmus(opts.cmus, colorscheme.to_owned())),
+        );
     });
+}
+
+async fn spawn_if<F>(condition: bool, f: F)
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    if condition {
+        if let Err(e) = tokio::spawn(f).await {
+            println!("Error: {e}");
+        }
+    }
 }
 
 fn list(dir: impl AsRef<Path>) {

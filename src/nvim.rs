@@ -1,5 +1,4 @@
-use async_std::task::spawn;
-use nvim_rs::create::async_std::new_path;
+use nvim_rs::create::tokio::new_path as nvim_connect_unix_socket;
 use nvim_rs::rpc::handler::Dummy;
 
 use std::fs;
@@ -28,13 +27,10 @@ async fn reload_instances(instances: Vec<PathBuf>, command: &str) -> anyhow::Res
         .into_iter()
         .map(|p| {
             let c = command.to_owned();
-            spawn(async move {
-                let (nvim, j) = new_path(&p, Dummy::new()).await?;
+            tokio::spawn(async move {
+                let (nvim, handle) = nvim_connect_unix_socket(&p, Dummy::new()).await?;
                 nvim.command(&c).await?;
-                nvim.command("redraw!").await?;
-                nvim.command("redrawstatus!").await?;
-                nvim.command("redrawtabline").await?;
-                j.cancel().await;
+                handle.abort();
 
                 Ok::<(), anyhow::Error>(())
             })
@@ -42,7 +38,7 @@ async fn reload_instances(instances: Vec<PathBuf>, command: &str) -> anyhow::Res
         .collect::<Vec<_>>();
 
     for t in tasks.into_iter() {
-        t.await?;
+        t.await??;
     }
 
     Ok(())

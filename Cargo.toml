@@ -16,7 +16,7 @@ cmus = []
 
 [dependencies]
 anyhow = "1.0"
-async-std = { version = "1.12", default-features = false }
+tokio = { version = "1.35.0", features = ["rt-multi-thread", "macros"] }
 clap = { version = "4.4.11", default-features = true, features = ["cargo"] }
 clap_complete = "4.4.4"
 humantime = "2.1"
@@ -25,5 +25,5 @@ serde_yaml = "0.9"
 shellexpand = "3.1.0"
 yaml-rust = "0.4.5"
 
-nvim-rs = { version = "0.6.0", features = ["use_async-std"], optional = true }
+nvim-rs = { version = "0.6.0", features = ["use_tokio"], optional = true }
 unix-cred = { version = "0.1.1", optional = true }
