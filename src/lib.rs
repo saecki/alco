@@ -29,7 +29,7 @@ pub const DEFAULT_TMUX_FILE: &str = "~/.config/tmux/colors/current.conf";
 pub const DEFAULT_TMUX_SELECTOR: &str = "~/.config/alco/tmux-selector.yml";
 
 pub const DEFAULT_NEOVIM_FILE: &str = "~/.config/nvim/colors.vim";
-pub const DEFAULT_NEOVIM_COMMAND: &str = "lua require('colors').reload()";
+pub const DEFAULT_NEOVIM_COMMAND: &str = "require('colors').reload()";
 
 pub const DEFAULT_STARSHIP_FILE: &str = "~/.config/starship.toml";
 pub const DEFAULT_STARSHIP_IN_FILE: &str = "~/.config/starship/starship.toml.in";

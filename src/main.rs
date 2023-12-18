@@ -222,7 +222,7 @@ fn main() {
                 .default_value(alco::DEFAULT_NEOVIM_COMMAND)
                 .value_name("command")
                 .value_hint(ValueHint::FilePath)
-                .help("The neovim command that will be executed to update the colorscheme"),
+                .help("The neovim lua codde that will be executed to update the colorscheme"),
         )
         .arg(
             Arg::new("reload starship")

@@ -28,10 +28,8 @@ async fn reload_instances(instances: Vec<PathBuf>, command: &str) -> anyhow::Res
         .map(|p| {
             let c = command.to_owned();
             tokio::spawn(async move {
-                let (nvim, handle) = nvim_connect_unix_socket(&p, Dummy::new()).await?;
-                nvim.command(&c).await?;
-                handle.abort();
-
+                let (nvim, _handle) = nvim_connect_unix_socket(&p, Dummy::new()).await?;
+                nvim.exec_lua(&c, Vec::new()).await?;
                 Ok::<(), anyhow::Error>(())
             })
         })
