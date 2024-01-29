@@ -7,6 +7,7 @@ use std::path::Path;
 use std::time::{Duration, SystemTime};
 
 pub use alacritty::reload_alacritty;
+pub use bat::reload_bat;
 pub use cmus::reload_cmus;
 pub use delta::reload_delta;
 pub use kitty::reload_kitty;
@@ -34,6 +35,10 @@ pub const DEFAULT_NEOVIM_COMMAND: &str = "require('colors').reload()";
 pub const DEFAULT_STARSHIP_FILE: &str = "~/.config/starship.toml";
 pub const DEFAULT_STARSHIP_IN_FILE: &str = "~/.config/starship/starship.toml.in";
 pub const DEFAULT_STARSHIP_SELECTOR: &str = "~/.config/alco/starship-selector.yml";
+
+pub const DEFAULT_BAT_FILE: &str = "~/.config/bat/config";
+pub const DEFAULT_BAT_IN_FILE: &str = "~/.config/bat/config.in";
+pub const DEFAULT_BAT_SELECTOR: &str = "~/.config/alco/bat-selector.yml";
 
 pub const DEFAULT_DELTA_FILE: &str = "~/.config/delta/colors/current.gitconfig";
 pub const DEFAULT_DELTA_SELECTOR: &str = "~/.config/alco/delta-selector.yml";
@@ -115,6 +120,23 @@ mod starship {
         _: impl AsRef<str>,
     ) -> anyhow::Result<()> {
         bail!("alco was compiled without the starship feature flag")
+    }
+}
+
+#[cfg(feature = "bat")]
+mod bat;
+#[cfg(not(feature = "bat"))]
+mod bat {
+    use anyhow::bail;
+    use std::path::Path;
+
+    pub fn reload_bat(
+        _: impl AsRef<Path>,
+        _: impl AsRef<Path>,
+        _: impl AsRef<Path>,
+        _: impl AsRef<str>,
+    ) -> anyhow::Result<()> {
+        bail!("alco was compiled without the bat feature flag")
     }
 }
 

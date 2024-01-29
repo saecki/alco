@@ -41,6 +41,7 @@ struct Options {
     tmux: TmuxOptions,
     neovim: NeovimOptions,
     starship: StarshipOptions,
+    bat: BatOptions,
     delta: DeltaOptions,
     cmus: CmusOptions,
 }
@@ -71,6 +72,13 @@ struct NeovimOptions {
 }
 
 struct StarshipOptions {
+    reload: bool,
+    file: String,
+    in_file: String,
+    selector: String,
+}
+
+struct BatOptions {
     reload: bool,
     file: String,
     in_file: String,
@@ -257,6 +265,38 @@ fn main() {
                 .help("The starship selector file which contains a colorscheme mapping"),
         )
         .arg(
+            Arg::new("reload bat")
+                .long("reload-bat")
+                .short('b')
+                .num_args(0)
+                .conflicts_with("reload all")
+                .help("Also reload bat by updating the configuration file"),
+        )
+        .arg(
+            Arg::new("bat file")
+                .long("bat-file")
+                .default_value(alco::DEFAULT_BAT_FILE)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The bat configuration file which will be overwritten"),
+        )
+        .arg(
+            Arg::new("bat in file")
+                .long("bat-in-file")
+                .default_value(alco::DEFAULT_BAT_IN_FILE)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The bat in file which will be read"),
+        )
+        .arg(
+            Arg::new("bat selector")
+                .long("bat-selector")
+                .default_value(alco::DEFAULT_BAT_SELECTOR)
+                .value_name("file")
+                .value_hint(ValueHint::FilePath)
+                .help("The bat selector file which contains a colorscheme mapping"),
+        )
+        .arg(
             Arg::new("reload delta")
                 .long("reload-delta")
                 .short('d')
@@ -376,6 +416,12 @@ fn main() {
         in_file: tilde(app_m.get_one::<String>("starship in file").unwrap()).into_owned(),
         selector: tilde(app_m.get_one::<String>("starship selector").unwrap()).into_owned(),
     };
+    let bat = BatOptions {
+        reload: app_m.get_flag("reload bat") | reload_all,
+        file: tilde(app_m.get_one::<String>("bat file").unwrap()).into_owned(),
+        in_file: tilde(app_m.get_one::<String>("bat in file").unwrap()).into_owned(),
+        selector: tilde(app_m.get_one::<String>("bat selector").unwrap()).into_owned(),
+    };
     let delta = DeltaOptions {
         reload: app_m.get_flag("reload delta") | reload_all,
         file: tilde(app_m.get_one::<String>("delta file").unwrap()).into_owned(),
@@ -392,6 +438,7 @@ fn main() {
         tmux,
         neovim,
         starship,
+        bat,
         delta,
         cmus,
     };
@@ -457,6 +504,7 @@ fn apply_colorscheme(colorscheme: &str, opts: Options) {
             spawn_if(opts.tmux.reload, reload_tmux(opts.tmux, colorscheme.to_owned())),
             spawn_if(opts.neovim.reload, reload_neovim(opts.neovim.command)),
             spawn_if(opts.starship.reload, reload_starship(opts.starship, colorscheme.to_owned())),
+            spawn_if(opts.bat.reload, reload_bat(opts.bat, colorscheme.to_owned())),
             spawn_if(opts.delta.reload, reload_delta(opts.delta, colorscheme.to_owned())),
             spawn_if(opts.cmus.reload, reload_cmus(opts.cmus, colorscheme.to_owned())),
         );
@@ -529,6 +577,12 @@ async fn reload_neovim(command: impl AsRef<str>) {
 async fn reload_starship(opts: StarshipOptions, colorscheme: impl AsRef<str>) {
     if let Err(e) = alco::reload_starship(opts.file, opts.in_file, opts.selector, colorscheme) {
         println!("Error reloading starship colorscheme:\n{}", e);
+    }
+}
+
+async fn reload_bat(opts: BatOptions, colorscheme: impl AsRef<str>) {
+    if let Err(e) = alco::reload_bat(opts.file, opts.in_file, opts.selector, colorscheme) {
+        println!("Error reloading bat colorscheme:\n{}", e);
     }
 }
 
