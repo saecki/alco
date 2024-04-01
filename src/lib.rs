@@ -250,6 +250,30 @@ pub fn toggle(
     Ok(new_config.current)
 }
 
+pub fn reload(
+    colors_file: impl AsRef<Path>,
+    config_file: impl AsRef<Path>,
+) -> anyhow::Result<String> {
+    let mut available_colors = list(colors_file)?;
+    if available_colors.is_empty() {
+        bail!("No colorschemes available");
+    }
+
+    let mut index = 0;
+    if let Ok(c) = parse_config(config_file.as_ref()) {
+        if let Some(i) = available_colors.iter().position(|f| f == &c.current) {
+            index = i;
+        }
+    }
+
+    let new_scheme = available_colors.remove(index);
+    let new_config = Config::now(new_scheme);
+
+    write_config(config_file, &new_config)?;
+
+    Ok(new_config.current)
+}
+
 pub fn list(colors_file: impl AsRef<Path>) -> anyhow::Result<Vec<String>> {
     parse_colors(colors_file).map(|c| c.colors)
 }

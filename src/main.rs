@@ -359,6 +359,7 @@ fn main() {
                         .num_args(0)
                         .help("Toggle in reverse order between available colorschemes"),
                 ),
+            Command::new("reload").bin_name("alco-reload").about("Reload the current colorscheme"),
             Command::new("list").bin_name("alco-list").about("List available colorschemes"),
             Command::new("status").bin_name("alco-status").about("Print the current status").arg(
                 Arg::new("time")
@@ -452,6 +453,9 @@ fn main() {
             let reverse = sub_m.get_flag("reverse");
             toggle(colors_file, config_file, reverse, opts);
         }
+        Some(("reload", _)) => {
+            reload(colors_file, config_file, opts);
+        }
         Some(("list", _)) => list(colors_file),
         Some(("status", sub_m)) => {
             let time = sub_m.get_flag("time");
@@ -486,6 +490,13 @@ fn toggle(
     match alco::toggle(&colors_file, &config_file, reverse) {
         Ok(colorscheme) => apply_colorscheme(&colorscheme, opts),
         Err(e) => println!("Error toggling colorscheme:\n{}", e),
+    }
+}
+
+fn reload(colors_file: impl AsRef<Path>, config_file: impl AsRef<Path>, opts: Options) {
+    match alco::reload(&colors_file, &config_file) {
+        Ok(colorscheme) => apply_colorscheme(&colorscheme, opts),
+        Err(e) => println!("Error reloading colorscheme:\n{}", e),
     }
 }
 
